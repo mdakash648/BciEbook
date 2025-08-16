@@ -38,39 +38,65 @@ export default function DashboardScreen() {
       return;
     }
 
+    const fileId = 'app_logo';
+
     try {
       setUploading(true);
 
-      // Create a short-lived JWT to authenticate the REST upload as the user
       const { jwt } = await account.createJWT();
 
-      const formData = new FormData();
-      // Use magic string 'unique()' for fileId per Appwrite REST API
-      formData.append('fileId', 'unique()');
-      formData.append('file', {
-        uri: selected.uri,
-        name: selected.name,
-        type: selected.type || 'application/octet-stream',
-      });
+      const postCreate = async () => {
+        const formData = new FormData();
+        formData.append('fileId', fileId);
+        formData.append('file', {
+          uri: selected.uri,
+          name: selected.name,
+          type: selected.type || 'application/octet-stream',
+        });
 
-      const url = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${CONFIG.APPWRITE_BUCKET_ID}/files`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'X-Appwrite-Project': CONFIG.APPWRITE_PROJECT_ID,
-          'X-Appwrite-JWT': jwt,
-          Accept: 'application/json',
-          // Do NOT set Content-Type; fetch will set it with a proper boundary for FormData
-        },
-        body: formData,
-      });
+        const createUrl = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${CONFIG.APPWRITE_BUCKET_ID}/files`;
+        const res = await fetch(createUrl, {
+          method: 'POST',
+          headers: {
+            'X-Appwrite-Project': CONFIG.APPWRITE_PROJECT_ID,
+            'X-Appwrite-JWT': jwt,
+            Accept: 'application/json',
+          },
+          body: formData,
+        });
+        const json = await res.json();
+        return { res, json };
+      };
 
-      const json = await res.json();
+      // Try create first
+      let { res, json } = await postCreate();
+
+      // If already exists, delete old and retry
+      if (res.status === 409) {
+        const deleteUrl = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${CONFIG.APPWRITE_BUCKET_ID}/files/${fileId}`;
+        const delRes = await fetch(deleteUrl, {
+          method: 'DELETE',
+          headers: {
+            'X-Appwrite-Project': CONFIG.APPWRITE_PROJECT_ID,
+            'X-Appwrite-JWT': jwt,
+            Accept: 'application/json',
+          },
+        });
+        if (!delRes.ok) {
+          const delJson = await delRes.json().catch(() => ({}));
+          throw new Error(delJson?.message || `Failed to delete previous logo (HTTP ${delRes.status}). Ensure Delete permission is granted in bucket.`);
+        }
+        // Recreate
+        const retry = await postCreate();
+        res = retry.res;
+        json = retry.json;
+      }
+
       if (!res.ok) {
         throw new Error(json?.message || `HTTP ${res.status}`);
       }
 
-      Alert.alert('Success', `Logo uploaded. File ID: ${json?.$id || json?.fileId || 'Unknown'}`);
+      Alert.alert('Success', `Logo uploaded. File ID: ${json?.$id || fileId}`);
     } catch (e) {
       const msg = e?.message || String(e);
       Alert.alert('Upload failed', msg);
