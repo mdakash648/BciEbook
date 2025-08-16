@@ -9,6 +9,7 @@ export const CONFIG = {
   PASSWORD_RESET_SDK_URL: 'https://bciebook.free.nf/',
   OAUTH_BRIDGE_URL: 'https://bciebook.free.nf/oauth-bridge.html',
   VERIFICATION_BRIDGE_URL: 'https://bciebook.free.nf/verify-sdk.html',
+  APP_LOGO_FALLBACK_URL: 'https://fra.cloud.appwrite.io/v1/storage/buckets/68a0a1f80010ebd8d6b1/files/app_logo/view?project=689c4308002d70695d25&mode=admin',
 };
 
 

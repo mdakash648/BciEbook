@@ -1,15 +1,104 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
+import RNFS from 'react-native-fs';
+import { Buffer } from 'buffer';
 import { CONFIG } from '../constants/Config';
 import { account } from '../lib/appwrite';
+
+const withCacheBust = (url) => {
+  const seed = globalThis.__APP_LOGO_CB__ || Date.now();
+  return `${url}${url.includes('?') ? '&' : '?'}cb=${seed}`;
+};
 
 export default function DashboardScreen() {
   const [selected, setSelected] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [logoUri, setLogoUri] = useState(null);
+  const [logoHeaders, setLogoHeaders] = useState(null); // optional headers for remote rendering
+  const [logoFilePath, setLogoFilePath] = useState(null);
+  const [logoError, setLogoError] = useState(null);
+
+  const buildLogoPreviewUrl = () => {
+    const base = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${CONFIG.APPWRITE_BUCKET_ID}/files/app_logo/preview`;
+    return withCacheBust(`${base}?width=256&height=256&quality=80`);
+  };
+
+  const loadCurrentLogo = async () => {
+    setLogoError(null);
+    try {
+      const fallbackBase = CONFIG.APP_LOGO_FALLBACK_URL;
+      const fallbackUrl = fallbackBase ? withCacheBust(fallbackBase) : null;
+      // 1) Try fallback external/public URL first if provided
+      if (fallbackUrl) {
+        try {
+          const ping = await fetch(fallbackUrl, { method: 'HEAD' });
+        	  if (ping.ok) {
+            setLogoUri(fallbackUrl);
+            setLogoHeaders(null);
+            return;
+          }
+        } catch (_) {}
+      }
+
+      const previewUrl = buildLogoPreviewUrl();
+
+      // 2) Try public storage URL
+      try {
+        const r = await fetch(previewUrl);
+        if (r.ok) {
+          setLogoUri(previewUrl);
+          setLogoHeaders(null);
+          return;
+        }
+      } catch (_) {}
+
+      // 3) Try with JWT headers
+      try {
+        const { jwt } = await account.createJWT();
+        const headers = { 'X-Appwrite-Project': CONFIG.APPWRITE_PROJECT_ID, 'X-Appwrite-JWT': jwt };
+        const r2 = await fetch(previewUrl, { headers });
+        if (r2.ok) {
+          setLogoUri(previewUrl);
+          setLogoHeaders(headers);
+          return;
+        }
+      } catch (_) {}
+
+      // 4) Fallback: download to file and render file://
+      try {
+        const headers = { 'X-Appwrite-Project': CONFIG.APPWRITE_PROJECT_ID };
+        try {
+          const { jwt } = await account.createJWT();
+          headers['X-Appwrite-JWT'] = jwt;
+        } catch (_) {}
+        const destPath = `${RNFS.CachesDirectoryPath}/app_logo_preview.jpg`;
+        const res = await RNFS.downloadFile({ fromUrl: previewUrl, headers, toFile: destPath }).promise;
+        if (res.statusCode !== 200) {
+          const resp = await fetch(previewUrl, { headers });
+          if (!resp.ok) throw new Error(`Preview HTTP ${resp.status}`);
+          const ab = await resp.arrayBuffer();
+          const base64 = Buffer.from(new Uint8Array(ab)).toString('base64');
+          await RNFS.writeFile(destPath, base64, 'base64');
+        }
+        setLogoFilePath(destPath);
+        setLogoUri('file://' + destPath);
+        setLogoHeaders(null);
+        return;
+      } catch (e) {
+        setLogoError('Logo not found. Upload a logo to see it here.');
+      }
+    } catch (_) {
+      setLogoError('Unable to load logo.');
+    }
+  };
+
+  useEffect(() => {
+    loadCurrentLogo();
+  }, []);
 
   const pickImage = async () => {
     try {
@@ -96,6 +185,8 @@ export default function DashboardScreen() {
         throw new Error(json?.message || `HTTP ${res.status}`);
       }
 
+      // Refresh logo from storage
+      await loadCurrentLogo();
       Alert.alert('Success', `Logo uploaded. File ID: ${json?.$id || fileId}`);
     } catch (e) {
       const msg = e?.message || String(e);
@@ -119,6 +210,8 @@ export default function DashboardScreen() {
               <View style={styles.logoPreview}>
                 {selected?.uri ? (
                   <Image source={{ uri: selected.uri }} style={styles.logoImage} />
+                ) : logoUri ? (
+                  <Image source={logoHeaders ? { uri: logoUri, headers: logoHeaders } : { uri: logoUri }} style={styles.logoImage} />
                 ) : (
                   <View style={styles.placeholderImage}>
                     <Icon name="image-outline" size={32} color="#6C757D" />
@@ -155,6 +248,7 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
 
                 <Text style={styles.helperNote}>Bucket: {CONFIG.APPWRITE_BUCKET_ID}</Text>
+                {logoError && <Text style={[styles.helperNote, { color: '#DC3545' }]}>{logoError}</Text>}
               </View>
             </View>
           </View>
@@ -187,3 +281,4 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#FFFFFF' },
   helperNote: { marginTop: 8, fontSize: 12, color: '#6C757D' },
 });
+

@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
+import { CONFIG } from '../constants/Config';
 
 const PLACEHOLDER_COLOR = '#9CA3AF';
 
@@ -22,6 +23,12 @@ export default function AuthScreen({ route, navigation }) {
 
   const title = useMemo(() => (isLogin ? 'Welcome Back' : 'Create Account'), [isLogin]);
   const subtitle = useMemo(() => (isLogin ? 'Sign in to your account' : 'Sign up for a new account'), [isLogin]);
+
+  // Compute a stable logo URL only when this screen mounts
+  const headerLogoUri = useMemo(() => {
+    const seed = globalThis.__APP_LOGO_CB__ || Date.now();
+    return `${CONFIG.APP_LOGO_FALLBACK_URL}${CONFIG.APP_LOGO_FALLBACK_URL.includes('?') ? '&' : '?'}cb=${seed}`;
+  }, []);
 
   const handleSubmit = async () => {
     const trimmedEmail = email.trim().toLowerCase();
@@ -58,7 +65,7 @@ export default function AuthScreen({ route, navigation }) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Ionicons name="person-circle-outline" size={80} color="#4A90E2" />
+            <Image source={{ uri: headerLogoUri }} style={styles.headerLogo} />
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.subtitle}>{subtitle}</Text>
           </View>
@@ -190,13 +197,19 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 24,
+  },
+  headerLogo: {
+    width: 84,
+    height: 84,
+    borderRadius: 18,
+    backgroundColor: '#EEF2F7',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#212529',
-    marginTop: 20,
+    marginTop: 16,
     marginBottom: 8,
   },
   subtitle: {

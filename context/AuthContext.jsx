@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { ID } from 'appwrite';
 import { account } from '../lib/appwrite';
+import RNFS from 'react-native-fs';
 
 export const AuthContext = createContext(null);
 
@@ -34,6 +35,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const clearLogoCache = async () => {
+    try {
+      const p = `${RNFS.CachesDirectoryPath}/app_logo_preview.jpg`;
+      const exists = await RNFS.exists(p);
+      if (exists) await RNFS.unlink(p);
+    } catch (_) {}
+  };
+
   const logout = useCallback(async () => {
     try {
       try {
@@ -43,6 +52,10 @@ export const AuthProvider = ({ children }) => {
       }
     } finally {
       setUser(null);
+      // Bust cached logo so it refreshes after logout
+      clearLogoCache();
+      // Optional global cache-bust seed that consumers can use
+      globalThis.__APP_LOGO_CB__ = Date.now();
     }
   }, []);
 
@@ -73,10 +86,6 @@ export const AuthProvider = ({ children }) => {
       setUser(mapped);
       return { success: true, user: mapped };
     } catch (error) {
-      const message = String(error?.message || '').toLowerCase();
-      if (error?.code === 409 || message.includes('already exists')) {
-        return { success: false, error: 'Already user is exist. please login.' };
-      }
       return { success: false, error: error?.message || 'Registration failed' };
     }
   }, []);
