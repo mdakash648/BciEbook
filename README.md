@@ -1,97 +1,247 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# BciEbook - React Native CLI App
 
-# Getting Started
+A React Native CLI application with Appwrite backend integration, featuring user authentication, file uploads, and a complete e-book library interface.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Features
 
-## Step 1: Start Metro
+- **User Authentication**: Complete login/signup system with Appwrite
+- **Profile Management**: Edit profile information with validation
+- **File Upload**: Image upload functionality with Appwrite Storage
+- **Settings**: Comprehensive settings page with password change
+- **Privacy Policy**: Detailed privacy policy page
+- **Dashboard**: Admin dashboard for file management
+- **Navigation**: Tab-based navigation with stack navigation for modals
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Tech Stack
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **Frontend**: React Native CLI
+- **Backend**: Appwrite (BaaS)
+- **Navigation**: React Navigation v6
+- **Icons**: React Native Vector Icons
+- **File Handling**: Expo FileSystem & ImagePicker
+- **State Management**: React Hooks
 
-```sh
-# Using npm
-npm start
+## Prerequisites
 
-# OR using Yarn
-yarn start
+- Node.js (>= 18)
+- React Native CLI
+- Android Studio (for Android development)
+- Xcode (for iOS development, macOS only)
+- Appwrite account and project
+
+## Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd BciEbook
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Install iOS dependencies** (macOS only)
+   ```bash
+   cd ios && pod install && cd ..
+   ```
+
+4. **Configure Appwrite**
+   - Create an Appwrite project
+   - Set up a database and collection
+   - Create a storage bucket
+   - Update `constants/Config.js` with your Appwrite credentials
+
+## Configuration
+
+Update the `constants/Config.js` file with your Appwrite project details:
+
+```javascript
+export const CONFIG = {
+  APPWRITE_ENDPOINT: 'https://cloud.appwrite.io/v1',
+  APPWRITE_PROJECT_ID: 'your-project-id',
+  APPWRITE_BUCKET_ID: 'your-bucket-id',
+  APPWRITE_DATABASE_ID: 'your-database-id',
+  APPWRITE_COLLECTION_ID: 'your-collection-id',
+};
 ```
 
-## Step 2: Build and run your app
+## Project Structure
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+```
+BciEbook/
+├── components/
+│   └── ui/
+│       └── CustomTabBar.jsx
+├── constants/
+│   └── Config.js
+├── hooks/
+│   └── useAuth.js
+├── lib/
+│   └── appwrite.js
+├── screens/
+│   ├── HomeScreen.jsx
+│   ├── FavoritesScreen.jsx
+│   ├── SettingsScreen.jsx
+│   ├── EditProfileScreen.jsx
+│   ├── DashboardScreen.jsx
+│   └── PrivacyPolicyScreen.jsx
+├── services/
+│   └── appwriteService.js
+├── App.jsx
+├── index.js
+└── package.json
+```
+
+## Running the App
 
 ### Android
-
-```sh
-# Using npm
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
 ### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### Metro Bundler
+```bash
+npm start
+```
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Features Overview
 
-## Step 3: Modify your app
+### 1. Home Screen
+- Simple welcome screen
+- Placeholder for e-book content
 
-Now that you have successfully run the app, let's make changes!
+### 2. Favorites Screen
+- Displays user's favorite books
+- Placeholder for future implementation
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### 3. Settings Screen
+- User profile display
+- Dark mode toggle
+- Password change functionality
+- Admin dashboard access
+- Privacy policy link
+- Logout functionality
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### 4. Edit Profile Screen
+- Edit user information
+- Phone number validation for Bangladesh
+- Address management
+- Password confirmation for sensitive changes
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+### 5. Dashboard Screen (Admin)
+- File upload functionality
+- Image picker integration
+- Appwrite Storage integration
+- Debug information display
+- Base64 file handling
 
-## Congratulations! :tada:
+### 6. Privacy Policy Screen
+- Comprehensive privacy policy
+- Scrollable content
+- Professional layout
 
-You've successfully run and modified your React Native App. :partying_face:
+## File Upload Features
 
-### Now what?
+The dashboard includes advanced file upload capabilities:
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+- **Image Picker**: Select images from device gallery
+- **Base64 Conversion**: Convert files to Base64 for reliable upload
+- **Appwrite Integration**: Direct upload to Appwrite Storage
+- **Error Handling**: Comprehensive error handling and user feedback
+- **Debug Information**: Real-time upload status and debugging
 
-# Troubleshooting
+## Authentication
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+The app uses Appwrite's authentication system:
 
-# Learn More
+- **Account Management**: User registration and login
+- **Session Management**: Automatic session handling
+- **Profile Updates**: Secure profile information updates
+- **Password Security**: Encrypted password storage and updates
 
-To learn more about React Native, take a look at the following resources:
+## Navigation
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- **Tab Navigation**: Bottom tab navigation for main screens
+- **Stack Navigation**: Modal screens for detailed views
+- **Custom Icons**: Ionicons integration for consistent UI
+
+## Dependencies
+
+### Core Dependencies
+- `react-native`: 0.81.0
+- `react`: 19.1.0
+- `@react-navigation/native`: Navigation library
+- `@react-navigation/bottom-tabs`: Tab navigation
+- `@react-navigation/stack`: Stack navigation
+- `react-native-vector-icons`: Icon library
+- `appwrite`: Backend SDK
+- `expo-file-system`: File system operations
+- `expo-image-picker`: Image selection
+- `buffer`: Buffer handling for file uploads
+
+### Development Dependencies
+- TypeScript configuration
+- ESLint and Prettier
+- Jest testing framework
+- Metro bundler configuration
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Metro bundler issues**
+   ```bash
+   npx react-native start --reset-cache
+   ```
+
+2. **Android build issues**
+   ```bash
+   cd android && ./gradlew clean && cd ..
+   ```
+
+3. **iOS build issues**
+   ```bash
+   cd ios && pod install && cd ..
+   ```
+
+4. **Navigation issues**
+   - Ensure `react-native-gesture-handler` is imported at the top of `index.js`
+   - Check that all navigation dependencies are properly installed
+
+### Appwrite Setup Issues
+
+1. **Authentication errors**
+   - Verify project ID and endpoint in `constants/Config.js`
+   - Check Appwrite project settings
+   - Ensure proper API keys and permissions
+
+2. **File upload errors**
+   - Verify bucket ID and permissions
+   - Check file size limits
+   - Ensure proper MIME type handling
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the troubleshooting section
+- Review Appwrite documentation for backend issues
