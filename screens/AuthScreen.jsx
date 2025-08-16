@@ -46,7 +46,8 @@ export default function AuthScreen({ route, navigation }) {
         : await register(trimmedEmail, trimmedPassword, trimmedName);
 
       if (result.success) {
-        navigation.replace('MainTabs');
+        // Navigation will be handled automatically by App.jsx auth state
+        // No need to manually navigate here
       } else {
         Alert.alert('Error', result.error);
       }

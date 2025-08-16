@@ -37,8 +37,13 @@ export default function SettingsScreen({ navigation }) {
           onPress: async () => {
             try {
               await logout();
-              // Navigate to login screen
+              // Navigate to Auth screen after successful logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Auth' }],
+              });
             } catch (error) {
+              console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
             }
           }

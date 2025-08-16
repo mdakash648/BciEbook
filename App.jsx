@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, ActivityIndicator } from 'react-native';
 
 // Import screens
 import HomeScreen from './screens/HomeScreen';
@@ -14,6 +15,7 @@ import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import CustomTabBar from './components/ui/CustomTabBar';
 import AuthScreen from './screens/AuthScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import { useAuth } from './hooks/useAuth';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -36,6 +38,18 @@ function TabNavigator() {
 
 // Main App Component
 export default function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#4A90E2" />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>
@@ -44,12 +58,21 @@ export default function App() {
             headerShown: false,
           }}
         >
-          <Stack.Screen name="Auth" component={AuthScreen} />
-          <Stack.Screen name="MainTabs" component={TabNavigator} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-          <Stack.Screen name="Dashboard" component={DashboardScreen} />
-          <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          {!user ? (
+            <>
+              <Stack.Screen name="Auth" component={AuthScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="MainTabs" component={TabNavigator} />
+              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+              <Stack.Screen name="Dashboard" component={DashboardScreen} />
+              <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+              <Stack.Screen name="Auth" component={AuthScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
