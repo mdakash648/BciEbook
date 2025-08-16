@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Verification - BCI E-Book Library</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="icon">📧</div>
+        <h1>Verifying your email…</h1>
+        <p>Please wait while we complete your verification.</p>
+      </div>
+
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Processing…</p>
+      </div>
+
+      <div id="error" class="error hidden">
+        <div class="error-icon">❌</div>
+        <div class="error-content">
+          <h3>Verification failed</h3>
+          <p id="error-message">An error occurred while verifying your email.</p>
+        </div>
+      </div>
+
+      <div id="success" class="success hidden">
+        <div class="success-icon">✅</div>
+        <div class="success-content">
+          <h3>Email Verified!</h3>
+          <p>Your email has been successfully verified. You can return to the app.</p>
+        </div>
+        <button onclick="openApp()" class="btn btn-primary">Return to App</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api-config.js"></script>
+  <script src="verify-sdk.js"></script>
+</body>
+</html>
+
+

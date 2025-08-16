@@ -15,7 +15,9 @@ import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import CustomTabBar from './components/ui/CustomTabBar';
 import AuthScreen from './screens/AuthScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import VerifyEmailScreen from './screens/VerifyEmailScreen';
 import { useAuth } from './hooks/useAuth';
+import { AuthProvider } from './context/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -37,7 +39,7 @@ function TabNavigator() {
 }
 
 // Main App Component
-export default function App() {
+function AppContent() {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -63,18 +65,28 @@ export default function App() {
               <Stack.Screen name="Auth" component={AuthScreen} />
               <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             </>
+          ) : !user.verified ? (
+            <>
+              <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+            </>
           ) : (
             <>
               <Stack.Screen name="MainTabs" component={TabNavigator} />
               <Stack.Screen name="EditProfile" component={EditProfileScreen} />
               <Stack.Screen name="Dashboard" component={DashboardScreen} />
               <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-              <Stack.Screen name="Auth" component={AuthScreen} />
-              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             </>
           )}
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

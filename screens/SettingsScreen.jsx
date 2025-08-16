@@ -40,11 +40,7 @@ export default function SettingsScreen({ navigation }) {
           onPress: async () => {
             try {
               await logout();
-              // Navigate to Auth screen after successful logout
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Auth' }],
-              });
+              // Root navigator will re-render to Auth automatically
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');

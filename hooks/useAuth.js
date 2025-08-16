@@ -1,83 +1,10 @@
-import { useState, useEffect } from 'react';
-import { account } from '../lib/appwrite';
-import { ID } from 'appwrite';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const checkUser = async () => {
-    try {
-      const currentUser = await account.get();
-      const labels = Array.isArray(currentUser?.labels) ? currentUser.labels : [];
-      const prefsRole = currentUser?.prefs?.role;
-      const computedRole = labels.includes('admin') || prefsRole === 'admin' ? 'admin' : 'user';
-      setUser({
-        id: currentUser.$id,
-        name: currentUser.name,
-        email: currentUser.email,
-        phone: currentUser.phone,
-        role: computedRole,
-        address: currentUser.prefs?.address || '',
-      });
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await account.deleteSession('current');
-      setUser(null);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const login = async (email, password) => {
-    try {
-      // First, try to delete any existing session
-      try {
-        await account.deleteSession('current');
-      } catch (deleteError) {
-        // Ignore errors if no session exists
-        console.log('No existing session to delete');
-      }
-      
-      // Create new session
-      await account.createEmailPasswordSession(email, password);
-      await checkUser();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error?.message || 'Login failed' };
-    }
-  };
-
-  const register = async (email, password, name) => {
-    try {
-      await account.create(ID.unique(), email, password, name);
-      
-      // Delete any existing session before creating new one
-      try {
-        await account.deleteSession('current');
-      } catch (deleteError) {
-        // Ignore errors if no session exists
-        console.log('No existing session to delete');
-      }
-      
-      await account.createEmailPasswordSession(email, password);
-      await checkUser();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error?.message || 'Registration failed' };
-    }
-  };
-
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  return { user, loading, checkUser, logout, login, register };
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within <AuthProvider>');
+  }
+  return ctx;
 };

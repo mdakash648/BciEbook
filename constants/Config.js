@@ -8,6 +8,7 @@ export const CONFIG = {
   PASSWORD_RESET_URL: 'https://bciebook.free.nf/',
   PASSWORD_RESET_SDK_URL: 'https://bciebook.free.nf/',
   OAUTH_BRIDGE_URL: 'https://bciebook.free.nf/oauth-bridge.html',
+  VERIFICATION_BRIDGE_URL: 'https://bciebook.free.nf/verify-sdk.html',
 };
 
 

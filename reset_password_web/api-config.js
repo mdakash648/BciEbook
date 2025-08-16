@@ -45,6 +45,33 @@ async function makeAppwriteRequest(endpoint, method = 'GET', data = null) {
     }
 }
 
+// Public request (no API key) for endpoints that must be accessed without application role
+async function makePublicAppwriteRequest(endpoint, method = 'GET', data = null) {
+    const url = `${API_CONFIG.endpoint}${endpoint}`;
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Appwrite-Project': API_CONFIG.projectId
+    };
+
+    const options = { method, headers };
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        options.body = JSON.stringify(data);
+    }
+
+    try {
+        const response = await fetch(url, options);
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        return result;
+    } catch (error) {
+        console.error('❌ Public API request failed:', error);
+        throw error;
+    }
+}
+
 // Function to update password using recovery
 async function updatePasswordRecovery(userId, secret, password) {
     const endpoint = `/account/recovery`;
@@ -80,5 +107,6 @@ async function testApiKey() {
 // Export functions for use in other scripts
 window.API_CONFIG = API_CONFIG;
 window.makeAppwriteRequest = makeAppwriteRequest;
+window.makePublicAppwriteRequest = makePublicAppwriteRequest;
 window.updatePasswordRecovery = updatePasswordRecovery;
 window.testApiKey = testApiKey;

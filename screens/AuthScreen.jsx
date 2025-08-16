@@ -45,9 +45,7 @@ export default function AuthScreen({ route, navigation }) {
         ? await login(trimmedEmail, trimmedPassword)
         : await register(trimmedEmail, trimmedPassword, trimmedName);
 
-      if (result.success) {
-        navigation.replace('MainTabs');
-      } else {
+      if (!result.success) {
         Alert.alert('Error', result.error);
       }
     } finally {
