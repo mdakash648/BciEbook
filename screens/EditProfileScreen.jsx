@@ -13,11 +13,41 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
 import { getAccountInstance } from '../services/appwriteService';
 
+// Convert Appwrite E.164 phone (e.g., +8801812345678) to local BD format (e.g., 01812345678)
+const phoneE164ToLocal = (input) => {
+  const raw = (input || '').replace(/\s+/g, '');
+  if (raw.startsWith('+880') && raw.length === 14) {
+    return '0' + raw.slice(4);
+  }
+  if (raw.startsWith('+88') && raw.length === 13) {
+    return '0' + raw.slice(3);
+  }
+  if (raw.startsWith('88') && raw.length === 13) {
+    return '0' + raw.slice(2);
+  }
+  return raw; // fallback (may already be local 11 digits or empty)
+};
+
+// Convert local BD format (e.g., 01812345678) to E.164 for Appwrite (e.g., +8801812345678)
+const phoneLocalToE164 = (input) => {
+  const local = (input || '').replace(/\D/g, '');
+  if (local.startsWith('0')) {
+    return '+88' + local;
+  }
+  if (local.startsWith('88')) {
+    return '+' + local;
+  }
+  if (local.startsWith('+88')) {
+    return local;
+  }
+  return '+88' + local; // best effort
+};
+
 export default function EditProfileScreen({ navigation }) {
   const { user, checkUser } = useAuth();
   const [editName, setEditName] = useState(user?.name || '');
   const [editEmail, setEditEmail] = useState(user?.email || '');
-  const [editPhone, setEditPhone] = useState(user?.phone || '');
+  const [editPhone, setEditPhone] = useState(phoneE164ToLocal(user?.phone));
   const [editAddress, setEditAddress] = useState(user?.address || '');
   const [password, setPassword] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -26,7 +56,7 @@ export default function EditProfileScreen({ navigation }) {
   useEffect(() => {
     setEditName(user?.name || '');
     setEditEmail(user?.email || '');
-    setEditPhone(user?.phone || '');
+    setEditPhone(phoneE164ToLocal(user?.phone));
     setEditAddress(user?.address || '');
   }, [user]);
 
@@ -35,16 +65,17 @@ export default function EditProfileScreen({ navigation }) {
       Alert.alert('Error', 'Please enter your name');
       return;
     }
-    if (editPhone.trim()) {
+    const currentLocalPhone = phoneE164ToLocal(user?.phone);
+    const hasNameChanged = editName.trim() !== (user?.name || '');
+    const hasPhoneChanged = editPhone.trim() !== currentLocalPhone;
+    const hasAddressChanged = editAddress.trim() !== (user?.address || '');
+    if (hasPhoneChanged) {
       const phoneRegex = /^01[3-9]\d{8}$/;
       if (!phoneRegex.test(editPhone.trim())) {
         Alert.alert('Invalid Phone Number', 'Please enter a valid Bangladesh phone number (e.g., 01812345678)');
         return;
       }
     }
-    const hasNameChanged = editName.trim() !== (user?.name || '');
-    const hasPhoneChanged = editPhone.trim() !== (user?.phone || '');
-    const hasAddressChanged = editAddress.trim() !== (user?.address || '');
     if (hasPhoneChanged && !password.trim()) {
       Alert.alert('Password Required', 'Please enter your password to update phone number');
       return;
@@ -64,7 +95,7 @@ export default function EditProfileScreen({ navigation }) {
         }
         if (hasPhoneChanged) {
           try {
-            const fullPhoneNumber = `+88${editPhone.trim()}`;
+            const fullPhoneNumber = phoneLocalToE164(editPhone.trim());
             await accountInstance.updatePhone(fullPhoneNumber, password);
             updateCount++;
           } catch (phoneError) {
@@ -213,7 +244,7 @@ export default function EditProfileScreen({ navigation }) {
               />
             </View>
           </View>
-          {editPhone.trim() !== (user?.phone || '') && (
+          {editPhone.trim() !== phoneE164ToLocal(user?.phone) && (
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Password</Text>
               <Text style={styles.inputDescription}>Enter your password to update phone number</Text>
