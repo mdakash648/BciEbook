@@ -51,6 +51,7 @@ export default function EditProfileScreen({ navigation }) {
   const [editAddress, setEditAddress] = useState(user?.address || '');
   const [password, setPassword] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Update form fields when user data changes
   useEffect(() => {
@@ -256,10 +257,20 @@ export default function EditProfileScreen({ navigation }) {
                   placeholderTextColor="#9CA3AF"
                   value={password}
                   onChangeText={setPassword}
-                  secureTextEntry={true}
+                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.passwordToggle}
+                >
+                  <Icon 
+                    name={showPassword ? "eye-off" : "eye"} 
+                    size={20} 
+                    color="#6C757D" 
+                  />
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -428,6 +439,10 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
+  },
+  passwordToggle: {
+    padding: 8,
     marginLeft: 8,
   },
 });

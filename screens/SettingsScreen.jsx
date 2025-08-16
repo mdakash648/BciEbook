@@ -24,6 +24,9 @@ export default function SettingsScreen({ navigation }) {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -81,6 +84,9 @@ export default function SettingsScreen({ navigation }) {
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const handleSavePassword = async () => {
@@ -311,10 +317,20 @@ export default function SettingsScreen({ navigation }) {
                     placeholderTextColor="#9CA3AF"
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
-                    secureTextEntry={true}
+                    secureTextEntry={!showCurrentPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                    style={styles.passwordToggle}
+                  >
+                    <Icon 
+                      name={showCurrentPassword ? "eye-off" : "eye"} 
+                      size={20} 
+                      color="#6C757D" 
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
               {/* New Password */}
@@ -329,10 +345,20 @@ export default function SettingsScreen({ navigation }) {
                     placeholderTextColor="#9CA3AF"
                     value={newPassword}
                     onChangeText={setNewPassword}
-                    secureTextEntry={true}
+                    secureTextEntry={!showNewPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                    style={styles.passwordToggle}
+                  >
+                    <Icon 
+                      name={showNewPassword ? "eye-off" : "eye"} 
+                      size={20} 
+                      color="#6C757D" 
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
               {/* Confirm New Password */}
@@ -346,10 +372,20 @@ export default function SettingsScreen({ navigation }) {
                     placeholderTextColor="#9CA3AF"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
-                    secureTextEntry={true}
+                    secureTextEntry={!showConfirmPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.passwordToggle}
+                  >
+                    <Icon 
+                      name={showConfirmPassword ? "eye-off" : "eye"} 
+                      size={20} 
+                      color="#6C757D" 
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -653,5 +689,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 16,
     color: '#212529',
+  },
+  passwordToggle: {
+    padding: 8,
+    marginLeft: 8,
   },
 });
