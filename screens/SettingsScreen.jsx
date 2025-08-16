@@ -303,6 +303,7 @@ export default function SettingsScreen({ navigation }) {
                   <TextInput
                     style={styles.input}
                     placeholder="Enter your current password"
+                    placeholderTextColor="#9CA3AF"
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
                     secureTextEntry={true}
@@ -320,6 +321,7 @@ export default function SettingsScreen({ navigation }) {
                   <TextInput
                     style={styles.input}
                     placeholder="Enter new password"
+                    placeholderTextColor="#9CA3AF"
                     value={newPassword}
                     onChangeText={setNewPassword}
                     secureTextEntry={true}
@@ -336,6 +338,7 @@ export default function SettingsScreen({ navigation }) {
                   <TextInput
                     style={styles.input}
                     placeholder="Confirm new password"
+                    placeholderTextColor="#9CA3AF"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={true}

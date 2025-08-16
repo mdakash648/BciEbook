@@ -148,6 +148,7 @@ export default function EditProfileScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your full name"
+                placeholderTextColor="#9CA3AF"
                 value={editName}
                 onChangeText={setEditName}
                 autoCapitalize="words"
@@ -163,6 +164,7 @@ export default function EditProfileScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your email address"
+                placeholderTextColor="#9CA3AF"
                 value={editEmail}
                 onChangeText={setEditEmail}
                 keyboardType="email-address"
@@ -182,6 +184,7 @@ export default function EditProfileScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="For example: 01812345678"
+                placeholderTextColor="#9CA3AF"
                 value={editPhone}
                 onChangeText={setEditPhone}
                 keyboardType="phone-pad"
@@ -199,6 +202,7 @@ export default function EditProfileScreen({ navigation }) {
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Enter your full address"
+                placeholderTextColor="#9CA3AF"
                 value={editAddress}
                 onChangeText={setEditAddress}
                 multiline={true}
@@ -218,6 +222,7 @@ export default function EditProfileScreen({ navigation }) {
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your password"
+                  placeholderTextColor="#9CA3AF"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={true}
