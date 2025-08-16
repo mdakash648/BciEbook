@@ -35,6 +35,15 @@ export const useAuth = () => {
 
   const login = async (email, password) => {
     try {
+      // First, try to delete any existing session
+      try {
+        await account.deleteSession('current');
+      } catch (deleteError) {
+        // Ignore errors if no session exists
+        console.log('No existing session to delete');
+      }
+      
+      // Create new session
       await account.createEmailPasswordSession(email, password);
       await checkUser();
       return { success: true };
@@ -46,6 +55,15 @@ export const useAuth = () => {
   const register = async (email, password, name) => {
     try {
       await account.create(ID.unique(), email, password, name);
+      
+      // Delete any existing session before creating new one
+      try {
+        await account.deleteSession('current');
+      } catch (deleteError) {
+        // Ignore errors if no session exists
+        console.log('No existing session to delete');
+      }
+      
       await account.createEmailPasswordSession(email, password);
       await checkUser();
       return { success: true };
