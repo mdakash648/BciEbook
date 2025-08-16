@@ -2,7 +2,7 @@ export const CONFIG = {
   APPWRITE_ENDPOINT: 'https://fra.cloud.appwrite.io/v1',
   APPWRITE_PROJECT_ID: '689c4308002d70695d25',
   APPWRITE_PROJECT_NAME: 'Bci_E_Book_Library',
-  APPWRITE_BUCKET_ID: '',
+  APPWRITE_BUCKET_ID: '68a0a1f80010ebd8d6b1',
   APPWRITE_DATABASE_ID: '',
   APPWRITE_COLLECTION_ID: '',
   PASSWORD_RESET_URL: 'https://bciebook.free.nf/',
