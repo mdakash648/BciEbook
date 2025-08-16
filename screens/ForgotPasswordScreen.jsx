@@ -68,6 +68,12 @@ export default function ForgotPasswordScreen({ navigation }) {
             <TouchableOpacity style={[styles.resetButton, loading && styles.resetButtonDisabled]} onPress={handleSubmit} disabled={loading}>
               <Text style={styles.resetButtonText}>{loading ? 'Sending...' : 'Send Reset Link'}</Text>
             </TouchableOpacity>
+
+            <View style={{ height: 12 }} />
+
+            <TouchableOpacity style={styles.signInButton} onPress={() => navigation.navigate('Auth')}>
+              <Text style={styles.signInButtonText}>Back to Sign In</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -113,6 +119,15 @@ const styles = StyleSheet.create({
   },
   resetButtonDisabled: { backgroundColor: '#ADB5BD' },
   resetButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  signInButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4A90E2',
+  },
+  signInButtonText: { color: '#4A90E2', fontSize: 16, fontWeight: '600' },
 });
 
 
