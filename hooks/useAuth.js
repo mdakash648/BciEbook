@@ -9,12 +9,15 @@ export const useAuth = () => {
   const checkUser = async () => {
     try {
       const currentUser = await account.get();
+      const labels = Array.isArray(currentUser?.labels) ? currentUser.labels : [];
+      const prefsRole = currentUser?.prefs?.role;
+      const computedRole = labels.includes('admin') || prefsRole === 'admin' ? 'admin' : 'user';
       setUser({
         id: currentUser.$id,
         name: currentUser.name,
         email: currentUser.email,
         phone: currentUser.phone,
-        role: 'user', // You can set this based on your app logic
+        role: computedRole,
         address: currentUser.prefs?.address || '',
       });
     } catch (error) {
