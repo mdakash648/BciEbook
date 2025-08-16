@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@expo/vector-icons": "^14.1.0",
+    "@react-native-community/blur": "^4.4.1",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-native/new-app-screen": "0.81.0",
     "@react-navigation/bottom-tabs": "^7.4.6",
