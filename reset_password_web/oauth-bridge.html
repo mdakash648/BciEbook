@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OAuth Bridge</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; }
+      .card { max-width: 560px; margin: 40px auto; border: 1px solid #eee; border-radius: 12px; padding: 24px; }
+      .muted { color: #6c757d; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Completing sign in…</h2>
+      <p class="muted">Please wait while we return you to the app.</p>
+    </div>
+    <script>
+      (function () {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var userId = params.get('userId');
+          var secret = params.get('secret');
+          var error = params.get('error');
+
+          // Your app scheme (must match app.json scheme)
+          var appScheme = 'bci-ebook://oauth-callback';
+
+          if (userId && secret) {
+            window.location.replace(appScheme + '?success=true&userId=' + encodeURIComponent(userId) + '&secret=' + encodeURIComponent(secret));
+            return;
+          }
+          // Failure path
+          window.location.replace(appScheme + '?success=false');
+        } catch (e) {
+          console.error(e);
+        }
+      })();
+    </script>
+  </body>
+</html>

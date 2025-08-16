@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { account } from '../lib/appwrite';
+import { ID } from 'appwrite';
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -32,9 +33,30 @@ export const useAuth = () => {
     }
   };
 
+  const login = async (email, password) => {
+    try {
+      await account.createEmailPasswordSession(email, password);
+      await checkUser();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error?.message || 'Login failed' };
+    }
+  };
+
+  const register = async (email, password, name) => {
+    try {
+      await account.create(ID.unique(), email, password, name);
+      await account.createEmailPasswordSession(email, password);
+      await checkUser();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error?.message || 'Registration failed' };
+    }
+  };
+
   useEffect(() => {
     checkUser();
   }, []);
 
-  return { user, loading, checkUser, logout };
+  return { user, loading, checkUser, logout, login, register };
 };

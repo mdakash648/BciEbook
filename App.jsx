@@ -12,6 +12,8 @@ import EditProfileScreen from './screens/EditProfileScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import CustomTabBar from './components/ui/CustomTabBar';
+import AuthScreen from './screens/AuthScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -42,10 +44,12 @@ export default function App() {
             headerShown: false,
           }}
         >
+          <Stack.Screen name="Auth" component={AuthScreen} />
           <Stack.Screen name="MainTabs" component={TabNavigator} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

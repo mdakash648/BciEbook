@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset - BCI E-Book Library</title>
+    <meta name="description" content="Reset your password for BCI E-Book Library">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="icon">🔐</div>
+                <h1>Reset Your Password</h1>
+                <p>Enter your new password below</p>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Processing...</p>
+            </div>
+
+            <div id="error" class="error hidden">
+                <div class="error-icon">❌</div>
+                <div class="error-content">
+                    <h3>Reset Link Invalid</h3>
+                    <p id="error-message">An error occurred while resetting your password.</p>
+                </div>
+                <button onclick="goToLogin()" class="btn btn-primary">Go to Login</button>
+            </div>
+
+            <div id="success" class="success hidden">
+                <div class="success-icon">✅</div>
+                <div class="success-content">
+                    <h3>Password Reset Successful!</h3>
+                    <p>Your password has been updated successfully. You can now log in with your new password.</p>
+                </div>
+                <button onclick="goToLogin()" class="btn btn-primary">Go to Login</button>
+            </div>
+
+            <form id="reset-form" class="form">
+                <div class="form-group">
+                    <label for="password">New Password</label>
+                    <div class="password-input-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required 
+                            minlength="8"
+                            placeholder="Enter your new password"
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                            <span class="eye-icon">👁️</span>
+                        </button>
+                    </div>
+                    <div class="password-requirements">
+                        <small>Password must be at least 8 characters long</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <div class="password-input-wrapper">
+                        <input 
+                            type="password" 
+                            id="confirm-password" 
+                            name="confirm-password" 
+                            required 
+                            minlength="8"
+                            placeholder="Confirm your new password"
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirm-password')">
+                            <span class="eye-icon">👁️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    Reset Password
+                </button>
+            </form>
+
+            <div class="footer">
+                <p>Remember your password? <a href="#" onclick="goToLogin()">Go to Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="api-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
