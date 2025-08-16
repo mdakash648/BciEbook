@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { CONFIG } from '../constants/Config';
+import { account } from '../lib/appwrite';
 
 const PLACEHOLDER_COLOR = '#9CA3AF';
 
@@ -9,9 +11,28 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 600);
+  const handleSubmit = async () => {
+    const trimmedEmail = (email || '').trim();
+
+    if (!trimmedEmail) {
+      Alert.alert('Email required', 'Please enter your email address.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const sdkUrl = `${CONFIG.PASSWORD_RESET_SDK_URL}?projectId=${encodeURIComponent(CONFIG.APPWRITE_PROJECT_ID)}`;
+      await account.createRecovery(trimmedEmail, sdkUrl);
+      Alert.alert(
+        'Reset link sent',
+        `If an account exists for ${trimmedEmail}, a password reset link has been sent.`
+      );
+    } catch (error) {
+      const message = error?.message || 'Failed to send reset link. Please try again.';
+      Alert.alert('Error', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
