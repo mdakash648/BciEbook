@@ -12,6 +12,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
+import BookDetailsScreen from './screens/BookDetailsScreen';
 import CustomTabBar from './components/ui/CustomTabBar';
 import AuthScreen from './screens/AuthScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
@@ -75,6 +76,7 @@ function AppContent() {
               <Stack.Screen name="EditProfile" component={EditProfileScreen} />
               <Stack.Screen name="Dashboard" component={DashboardScreen} />
               <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+              <Stack.Screen name="BookDetails" component={BookDetailsScreen} />
             </>
           )}
         </Stack.Navigator>

@@ -7,6 +7,9 @@ import RNFS from 'react-native-fs';
 import { Buffer } from 'buffer';
 import { CONFIG } from '../constants/Config';
 import { loadPublicData, savePrivacyPolicyData, saveAboutData } from '../services/demoPolicyService';
+import { uploadBook } from '../services/bookUploadService';
+import { createCategory, listCategories } from '../services/categoryService';
+import DocumentPicker from 'react-native-document-picker';
 import { account } from '../lib/appwrite';
 // Database features removed
 
@@ -30,6 +33,25 @@ export default function DashboardScreen({ navigation }) {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [policyMetadata, setPolicyMetadata] = useState(null);
   const [aboutText, setAboutText] = useState('');
+  // New Book Upload states
+  const [bookTitle, setBookTitle] = useState('');
+  const [bookAuthor, setBookAuthor] = useState('');
+  const [bookCategory, setBookCategory] = useState('');
+  const [bookEdition, setBookEdition] = useState('');
+  const [bookPages, setBookPages] = useState('');
+  const [bookLanguage, setBookLanguage] = useState('');
+  const [bookPublisher, setBookPublisher] = useState('');
+  const [bookCountry, setBookCountry] = useState('');
+  const [coverAsset, setCoverAsset] = useState(null);
+  const [pdfAsset, setPdfAsset] = useState(null);
+  const [bookUploading, setBookUploading] = useState(false);
+  // Categories
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryDesc, setCategoryDesc] = useState('');
+  const [categorySaving, setCategorySaving] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
 
   const buildLogoPreviewUrl = () => {
     const base = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${CONFIG.APPWRITE_BUCKET_ID}/files/app_logo/preview`;
@@ -144,7 +166,50 @@ export default function DashboardScreen({ navigation }) {
   useEffect(() => {
     loadCurrentLogo();
     loadPrivacyPolicy();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      setCategoryLoading(true);
+      const docs = await listCategories();
+      setCategories(Array.isArray(docs) ? docs : []);
+    } catch (_) {
+      setCategories([]);
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  const saveCategory = async () => {
+    if (!categoryName.trim()) {
+      Alert.alert('Category', 'Please enter a category name.');
+      return;
+    }
+    try {
+      setCategorySaving(true);
+      await createCategory({ name: categoryName, description: categoryDesc });
+      setCategoryName('');
+      setCategoryDesc('');
+      await loadCategories();
+      Alert.alert('Success', 'Category created');
+    } catch (e) {
+      Alert.alert('Error', e?.message || String(e));
+    } finally {
+      setCategorySaving(false);
+    }
+  };
+
+  const toggleCategorySelect = (id) => {
+    setSelectedCategoryIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      const names = categories
+        .filter((c) => next.includes(c.$id))
+        .map((c) => c.name);
+      setBookCategory(names.join(', '));
+      return next;
+    });
+  };
 
   const pickImage = async () => {
     try {
@@ -164,6 +229,69 @@ export default function DashboardScreen({ navigation }) {
       Alert.alert('Error', 'Could not open image picker.');
     } finally {
       setPicking(false);
+    }
+  };
+
+  const pickCover = async () => {
+    try {
+      const res = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
+      if (res.didCancel) return;
+      const a = res.assets?.[0];
+      if (!a) return;
+      setCoverAsset({ uri: a.uri, name: a.fileName || `cover-${Date.now()}.jpg`, type: a.type || 'image/jpeg' });
+    } catch (e) {
+      Alert.alert('Cover', 'Could not choose image');
+    }
+  };
+
+  const pickPdf = async () => {
+    try {
+      const res = await DocumentPicker.pickSingle({ type: DocumentPicker.types.pdf });
+      setPdfAsset({ uri: res.uri, name: res.name || `book-${Date.now()}.pdf`, type: res.type || 'application/pdf' });
+    } catch (e) {
+      if (!DocumentPicker.isCancel(e)) Alert.alert('PDF', 'Could not choose file');
+    }
+  };
+
+  const submitBook = async () => {
+    if (!bookTitle.trim() || !coverAsset || !pdfAsset) {
+      Alert.alert('Missing info', 'Please provide title, cover image, and PDF.');
+      return;
+    }
+    try {
+      setBookUploading(true);
+      const selectedNames = categories
+        .filter((c) => selectedCategoryIds.includes(c.$id))
+        .map((c) => c.name);
+      const categoryString = selectedNames.join(', ');
+      await uploadBook({
+        title: bookTitle,
+        author: bookAuthor,
+        category: categoryString,
+        edition: bookEdition,
+        pages: bookPages,
+        language: bookLanguage,
+        publisher: bookPublisher,
+        country: bookCountry,
+        coverFile: coverAsset,
+        pdfFile: pdfAsset,
+      });
+      setBookTitle('');
+      setBookAuthor('');
+      setBookCategory('');
+      setBookEdition('');
+      setBookPages('');
+      setBookLanguage('');
+      setBookPublisher('');
+      setBookCountry('');
+      setSelectedCategoryIds([]);
+      setCoverAsset(null);
+      setPdfAsset(null);
+      Alert.alert('Success', 'Book uploaded successfully');
+    } catch (e) {
+      Alert.alert('Upload Failed', e?.message || String(e));
+    } finally {
+      setBookUploading(false);
     }
   };
 
@@ -398,6 +526,182 @@ export default function DashboardScreen({ navigation }) {
             </View>
           </View>
         </View>
+
+        {/* New Book Upload */}
+        {/* Categories Management */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Categories</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardSubtitle}>Create and view categories</Text>
+            <View style={styles.textareaContainer}>
+              <TextInput
+                style={[styles.textarea, { minHeight: 44 }]}
+                placeholder="Category name"
+                value={categoryName}
+                onChangeText={setCategoryName}
+              />
+              <TextInput
+                style={[styles.textarea, { minHeight: 80, marginTop: 8 }]}
+                placeholder="Description (optional)"
+                value={categoryDesc}
+                onChangeText={setCategoryDesc}
+                multiline
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton]}
+                onPress={saveCategory}
+                disabled={categorySaving}
+                activeOpacity={0.8}
+              >
+                <Icon name="add-circle-outline" size={18} color="#fff" />
+                <Text style={[styles.buttonText, styles.saveButtonText]}>
+                  {categorySaving ? 'Saving…' : 'Create Category'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginTop: 12 }}>
+              <Text style={[styles.cardTitle, { marginBottom: 8 }]}>Existing</Text>
+              {categoryLoading ? (
+                <Text style={styles.helperNote}>Loading…</Text>
+              ) : categories.length === 0 ? (
+                <Text style={styles.helperNote}>No categories yet.</Text>
+              ) : (
+                categories.map((c) => (
+                  <View key={c.$id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E9ECEF' }}>
+                    <Text style={{ fontWeight: '600', color: '#212529' }}>{c.name}</Text>
+                    {!!c.description && (
+                      <Text style={{ color: '#6C757D', marginTop: 2 }}>{c.description}</Text>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* New Book Upload */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Upload New Book (PDF)</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardSubtitle}>Provide book details and files</Text>
+            <View style={styles.textareaContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Book title"
+                placeholderTextColor="#6C757D"
+                value={bookTitle}
+                onChangeText={setBookTitle}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                placeholder="Author (optional)"
+                placeholderTextColor="#6C757D"
+                value={bookAuthor}
+                onChangeText={setBookAuthor}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                placeholder="Edition (optional)"
+                placeholderTextColor="#6C757D"
+                value={bookEdition}
+                onChangeText={setBookEdition}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                placeholder="Pages (optional)"
+                placeholderTextColor="#6C757D"
+                value={bookPages}
+                onChangeText={setBookPages}
+                keyboardType="number-pad"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                placeholder="Language (optional)"
+                placeholderTextColor="#6C757D"
+                value={bookLanguage}
+                onChangeText={setBookLanguage}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                placeholder="Publisher (optional)"
+                placeholderTextColor="#6C757D"
+                value={bookPublisher}
+                onChangeText={setBookPublisher}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                placeholder="Country (optional)"
+                placeholderTextColor="#6C757D"
+                value={bookCountry}
+                onChangeText={setBookCountry}
+              />
+              <View style={{ marginTop: 8 }}>
+                <Text style={[styles.cardSubtitle, { marginBottom: 6 }]}>Select categories</Text>
+                {categoryLoading ? (
+                  <Text style={styles.helperNote}>Loading categories…</Text>
+                ) : categories.length === 0 ? (
+                  <Text style={styles.helperNote}>No categories yet. Create some above.</Text>
+                ) : (
+                  <View style={{ borderTopWidth: 1, borderTopColor: '#E9ECEF' }}>
+                    {categories.map((c) => {
+                      const checked = selectedCategoryIds.includes(c.$id);
+                      return (
+                        <TouchableOpacity
+                          key={c.$id}
+                          onPress={() => toggleCategorySelect(c.$id)}
+                          activeOpacity={0.7}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 10,
+                            borderBottomWidth: 1,
+                            borderBottomColor: '#E9ECEF',
+                            gap: 10,
+                          }}
+                        >
+                          <Icon name={checked ? 'checkbox-outline' : 'square-outline'} size={20} color={checked ? '#4A90E2' : '#6C757D'} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: '#212529', fontWeight: '600' }}>{c.name}</Text>
+                            {!!c.description && (
+                              <Text style={{ color: '#6C757D', marginTop: 2 }}>{c.description}</Text>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+                {selectedCategoryIds.length > 0 && (
+                  <Text style={[styles.helperNote, { marginTop: 8 }]}>Selected: {bookCategory}</Text>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={pickCover} activeOpacity={0.8}>
+                  <Icon name="image-outline" size={18} color="#fff" />
+                  <Text style={[styles.buttonText, styles.primaryButtonText]}>{coverAsset ? 'Change Cover' : 'Choose Cover'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={pickPdf} activeOpacity={0.8}>
+                  <Icon name="document-outline" size={18} color="#fff" />
+                  <Text style={[styles.buttonText, styles.primaryButtonText]}>{pdfAsset ? 'Change PDF' : 'Choose PDF'}</Text>
+                </TouchableOpacity>
+              </View>
+              {coverAsset && <Text style={styles.helperNote}>Cover: {coverAsset.name}</Text>}
+              {pdfAsset && <Text style={styles.helperNote}>PDF: {pdfAsset.name}</Text>}
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton]}
+                onPress={submitBook}
+                disabled={bookUploading}
+                activeOpacity={0.8}
+              >
+                <Icon name="cloud-upload-outline" size={18} color="#fff" />
+                <Text style={[styles.buttonText, styles.saveButtonText]}>
+                  {bookUploading ? 'Uploading…' : 'Upload Book'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -468,6 +772,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#343A40',
     padding: 0,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CED4DA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#212529',
   },
   policyPreview: {
     marginTop: 10,
