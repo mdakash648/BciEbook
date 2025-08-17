@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 import { listBooks } from '../services/bookService';
 
 const MOCK_BOOKS = [];
@@ -11,38 +12,45 @@ export default function HomeScreen({ navigation }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const docs = await listBooks();
-        setBooks(
-          Array.isArray(docs)
-            ? docs.map((d) => ({
-                id: d.$id,
-                title: d.title,
-                author: d.author,
-                cover: d.coverFileId, // URL stored in DB
-                category: d.category,
-                edition: d.edition,
-                pages: d.pages,
-                language: d.language,
-                publisher: d.publisher,
-                country: d.country,
-                pdfUrl: d.pdfFileId,
-                raw: d,
-              }))
-            : []
-        );
-      } catch (_) {
-        setBooks([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      const load = async () => {
+        try {
+          setLoading(true);
+          const docs = await listBooks();
+          // Add cache busting to cover images
+          const refreshKey = Date.now();
+          setImageRefreshKey(refreshKey);
+          
+          setBooks(
+            Array.isArray(docs)
+              ? docs.map((d) => ({
+                  id: d.$id,
+                  title: d.title,
+                  author: d.author,
+                  cover: d.coverFileId ? `${d.coverFileId}${d.coverFileId.includes('?') ? '&' : '?'}refresh=${refreshKey}` : d.coverFileId,
+                  category: d.category,
+                  edition: d.edition,
+                  pages: d.pages,
+                  language: d.language,
+                  publisher: d.publisher,
+                  country: d.country,
+                  pdfUrl: d.pdfFileId,
+                  raw: d,
+                }))
+              : []
+          );
+        } catch (_) {
+          setBooks([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      load();
+    }, [])
+  );
 
   const filtered = useMemo(() => {
     const src = books.length ? books : MOCK_BOOKS;
@@ -60,7 +68,11 @@ export default function HomeScreen({ navigation }) {
       onPress={() => navigation.navigate('BookDetails', { book: item })}
     >
       <View style={styles.coverWrap}>
-        <Image source={{ uri: item.cover }} style={styles.cover} />
+        <Image 
+          source={{ uri: item.cover }} 
+          style={styles.cover}
+          key={`${item.id}-${imageRefreshKey}`} // Force re-render with refresh key
+        />
       </View>
       <Text numberOfLines={2} style={styles.bookTitle}>{item.title}</Text>
       <Text numberOfLines={1} style={styles.bookAuthor}>{item.author}</Text>

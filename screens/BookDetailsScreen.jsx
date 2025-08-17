@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { deleteBook, updateBookWithFiles } from '../services/bookService';
+import { listCategories } from '../services/categoryService';
 import * as DocumentPicker from 'react-native-document-picker';
 
 export default function BookDetailsScreen({ navigation, route }) {
@@ -36,6 +37,14 @@ export default function BookDetailsScreen({ navigation, route }) {
   const [language, setLanguage] = useState(book.language || '');
   const [publisher, setPublisher] = useState(book.publisher || '');
   const [country, setCountry] = useState(book.country || '');
+  
+  // Categories state
+  const [categories, setCategories] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  
+  // Image refresh state
+  const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
 
   const info = [
     { label: 'Name', value: title },
@@ -65,7 +74,18 @@ export default function BookDetailsScreen({ navigation, route }) {
       Alert.alert('PDF', e?.message || 'Failed to open PDF');
     }
   };
-  const openEditModal = () => {
+  const toggleCategorySelect = (id) => {
+    setSelectedCategoryIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      const names = categories
+        .filter((c) => next.includes(c.$id))
+        .map((c) => c.CategorieName);
+      setCategory(names.join(', '));
+      return next;
+    });
+  };
+
+  const openEditModal = async () => {
     // Reset form values to current book data
     setTitle(book.title || '');
     setCategory(book.category || '');
@@ -75,6 +95,30 @@ export default function BookDetailsScreen({ navigation, route }) {
     setLanguage(book.language || '');
     setPublisher(book.publisher || '');
     setCountry(book.country || '');
+    
+    // Load categories first
+    try {
+      setCategoryLoading(true);
+      const docs = await listCategories();
+      const loadedCategories = Array.isArray(docs) ? docs : [];
+      setCategories(loadedCategories);
+      
+      // Parse current categories and select them
+      const currentCategories = (book.category || '').split(',').map(c => c.trim()).filter(c => c);
+      const selectedIds = [];
+      loadedCategories.forEach(cat => {
+        if (currentCategories.includes(cat.CategorieName)) {
+          selectedIds.push(cat.$id);
+        }
+      });
+      setSelectedCategoryIds(selectedIds);
+    } catch (_) {
+      setCategories([]);
+      setSelectedCategoryIds([]);
+    } finally {
+      setCategoryLoading(false);
+    }
+    
     setEditModalVisible(true);
   };
 
@@ -113,6 +157,9 @@ export default function BookDetailsScreen({ navigation, route }) {
         publisher,
         country,
       });
+      
+      // Set navigation param to trigger home screen refresh when going back
+      navigation.setParams({ bookUpdated: Date.now() });
     } catch (e) {
       Alert.alert('Error', e?.message || 'Failed to update');
     } finally {
@@ -160,11 +207,58 @@ export default function BookDetailsScreen({ navigation, route }) {
     if (!file) return;
     try {
       setUpdating(true);
-      const data = { title: book.title };
+      // Provide all current book data to avoid missing required fields
+      const data = {
+        title: book.title || '',
+        author: book.author || '',
+        category: book.category || '',
+        edition: book.edition || '',
+        pages: book.pages || 0,
+        language: book.language || '',
+        publisher: book.publisher || '',
+        country: book.country || '',
+      };
       const opts = kind === 'cover' ? { coverFile: file } : { pdfFile: file };
       const doc = book.raw || { $id: book.id, coverFileId: book.cover, pdfFileId: book.pdfUrl };
-      await updateBookWithFiles(doc, data, opts);
-      Alert.alert('Updated', `${kind === 'cover' ? 'Cover' : 'PDF'} replaced`);
+      
+      const result = await updateBookWithFiles(doc, data, opts);
+      
+      // If cover was replaced, update the book object with new cover URL and cache bust
+      if (kind === 'cover' && result?.coverFileId) {
+        // Add cache busting parameter to force image refresh
+        const cacheBustUrl = `${result.coverFileId}${result.coverFileId.includes('?') ? '&' : '?'}cb=${Date.now()}`;
+        
+        // Update the book object immediately to show new cover
+        Object.assign(book, {
+          cover: cacheBustUrl,
+          coverFileId: result.coverFileId,
+        });
+        
+        // If book has raw data, update it too
+        if (book.raw) {
+          book.raw.coverFileId = result.coverFileId;
+        }
+        
+        // Force image refresh by updating the refresh key
+        setImageRefreshKey(Date.now());
+        
+        // Set navigation param to trigger home screen refresh when going back
+        navigation.setParams({ bookUpdated: Date.now() });
+      }
+      
+      // If PDF was replaced, update PDF URL
+      if (kind === 'pdf' && result?.pdfFileId) {
+        Object.assign(book, {
+          pdfUrl: result.pdfFileId,
+          pdfFileId: result.pdfFileId,
+        });
+        
+        if (book.raw) {
+          book.raw.pdfFileId = result.pdfFileId;
+        }
+      }
+      
+      Alert.alert('Updated', `${kind === 'cover' ? 'Cover' : 'PDF'} replaced successfully`);
     } catch (e) {
       Alert.alert('Error', e?.message || 'Update failed');
     } finally {
@@ -187,7 +281,13 @@ export default function BookDetailsScreen({ navigation, route }) {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Image source={{ uri: book.cover }} style={styles.heroImage} />
+          <Image 
+            source={{ 
+              uri: `${book.cover}${book.cover?.includes('?') ? '&' : '?'}refresh=${imageRefreshKey}` 
+            }} 
+            style={styles.heroImage}
+            key={imageRefreshKey} // Force re-render when key changes
+          />
         </View>
 
         <View style={styles.body}>
@@ -289,14 +389,48 @@ export default function BookDetailsScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Category</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter category"
-                    placeholderTextColor="#6C757D"
-                    value={category}
-                    onChangeText={setCategory}
-                  />
+                  <Text style={styles.inputLabel}>Categories</Text>
+                  <View style={styles.categoryContainer}>
+                    {categoryLoading ? (
+                      <Text style={styles.loadingText}>Loading categories...</Text>
+                    ) : categories.length === 0 ? (
+                      <Text style={styles.noCategoriesText}>No categories available</Text>
+                    ) : (
+                      <View style={styles.categoryCheckboxContainer}>
+                        {categories.map((cat) => {
+                          const isSelected = selectedCategoryIds.includes(cat.$id);
+                          return (
+                            <TouchableOpacity
+                              key={cat.$id}
+                              onPress={() => toggleCategorySelect(cat.$id)}
+                              activeOpacity={0.7}
+                              style={styles.categoryCheckboxRow}
+                            >
+                              <View style={styles.checkboxContainer}>
+                                <Icon 
+                                  name={isSelected ? 'checkbox-outline' : 'square-outline'} 
+                                  size={20} 
+                                  color={isSelected ? '#4A90E2' : '#6C757D'} 
+                                />
+                              </View>
+                              <Text style={[
+                                styles.categoryCheckboxText,
+                                isSelected && styles.categoryCheckboxTextSelected
+                              ]}>
+                                {cat.CategorieName}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                    {selectedCategoryIds.length > 0 && (
+                      <View style={styles.selectedCategoriesContainer}>
+                        <Text style={styles.selectedCategoriesLabel}>Selected:</Text>
+                        <Text style={styles.selectedCategoriesText}>{category}</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -541,6 +675,70 @@ const styles = StyleSheet.create({
   cancelBtnText: { color: '#495057', fontWeight: '600' },
   saveBtn: { backgroundColor: '#4A90E2' },
   saveBtnText: { color: '#FFFFFF', fontWeight: '600' },
+
+  // Category checkbox styles
+  categoryContainer: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  categoryCheckboxContainer: {
+    maxHeight: 200,
+  },
+  categoryCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F5',
+  },
+  checkboxContainer: {
+    marginRight: 12,
+  },
+  categoryCheckboxText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '500',
+  },
+  categoryCheckboxTextSelected: {
+    color: '#4A90E2',
+    fontWeight: '600',
+  },
+  selectedCategoriesContainer: {
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  selectedCategoriesLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6C757D',
+    marginBottom: 2,
+  },
+  selectedCategoriesText: {
+    fontSize: 13,
+    color: '#4A90E2',
+    fontWeight: '500',
+  },
+  loadingText: {
+    textAlign: 'center',
+    padding: 16,
+    color: '#6C757D',
+    fontSize: 14,
+  },
+  noCategoriesText: {
+    textAlign: 'center',
+    padding: 16,
+    color: '#6C757D',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
 });
 
 
