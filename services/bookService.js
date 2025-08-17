@@ -47,6 +47,7 @@ export async function deleteBook(doc) {
 	// Best effort: try to delete both files first
 	const coverId = extractFileIdFromViewUrl(doc?.coverFileId);
 	const pdfId = extractFileIdFromViewUrl(doc?.pdfFileId);
+	try { const { jwt } = await account.createJWT(); if (jwt) client.setJWT(jwt); } catch (_) {}
 	try { if (coverId) await storage.deleteFile(BUCKET_ID, coverId); } catch (_) {}
 	try { if (pdfId) await storage.deleteFile(BUCKET_ID, pdfId); } catch (_) {}
 	// Then delete the document
@@ -97,6 +98,8 @@ export async function updateBookWithFiles(doc, data, opts = {}) {
         const imageExt = inferImageExt();
         const coverFileName = `${sanitizedTitle}_book_${documentId}.${imageExt}`;
         const coverStorageId = `cover_${documentId}`;
+        // delete previous file first to avoid ID collision
+        try { const prev = extractFileIdFromViewUrl(doc.coverFileId); if (prev) await storage.deleteFile(BUCKET_ID, prev); } catch (_) {}
         const upload = {
             uri: coverFile.uri,
             name: coverFileName,
@@ -104,13 +107,13 @@ export async function updateBookWithFiles(doc, data, opts = {}) {
         };
         const up = await uploadViaRest(BUCKET_ID, coverStorageId, upload);
         result.coverFileId = `${endpoint}/storage/buckets/${BUCKET_ID}/files/${up.$id}/view?project=${project}`;
-        // try to remove previous
-        try { const prev = extractFileIdFromViewUrl(doc.coverFileId); if (prev) await storage.deleteFile(BUCKET_ID, prev); } catch (_) {}
     }
 
     if (pdfFile) {
         const pdfFileName = `${sanitizedTitle}_${documentId}.pdf`;
         const pdfStorageId = `pdf_${documentId}`;
+        // delete previous file first to avoid ID collision
+        try { const prev = extractFileIdFromViewUrl(doc.pdfFileId); if (prev) await storage.deleteFile(BUCKET_ID, prev); } catch (_) {}
         const upload = {
             uri: pdfFile.uri,
             name: pdfFileName,
@@ -118,7 +121,6 @@ export async function updateBookWithFiles(doc, data, opts = {}) {
         };
         const up = await uploadViaRest(BUCKET_ID, pdfStorageId, upload);
         result.pdfFileId = `${endpoint}/storage/buckets/${BUCKET_ID}/files/${up.$id}/view?project=${project}`;
-        try { const prev = extractFileIdFromViewUrl(doc.pdfFileId); if (prev) await storage.deleteFile(BUCKET_ID, prev); } catch (_) {}
     }
 
     const payload = {

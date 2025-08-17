@@ -66,6 +66,10 @@ export async function uploadBook({ title, author, category, edition, pages, lang
     const form = new FormData();
     form.append('fileId', fileId);
     form.append('file', fileObj);
+    // Ensure future update/delete via user session is allowed
+    form.append('permissions[]', 'read("any")');
+    form.append('permissions[]', 'update("users")');
+    form.append('permissions[]', 'delete("users")');
     const url = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files`;
     const res = await fetch(url, { method: 'POST', headers: buildHeaders(), body: form });
     const json = await res.json();

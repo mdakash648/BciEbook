@@ -1,7 +1,10 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, Alert } from 'react-native';
+import React, { useContext, useMemo, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { AuthContext } from '../context/AuthContext';
+import { deleteBook, updateBookWithFiles } from '../services/bookService';
+import * as DocumentPicker from 'react-native-document-picker';
 
 export default function BookDetailsScreen({ navigation, route }) {
   const book = route?.params?.book || {
@@ -19,15 +22,29 @@ export default function BookDetailsScreen({ navigation, route }) {
     country: 'United States',
   };
 
+  const { user } = useContext(AuthContext);
+  const isAdmin = useMemo(() => user?.role === 'admin', [user]);
+  const [updating, setUpdating] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  const [title, setTitle] = useState(book.title || '');
+  const [category, setCategory] = useState(book.category || '');
+  const [author, setAuthor] = useState(book.author || '');
+  const [edition, setEdition] = useState(book.edition || '');
+  const [pages, setPages] = useState(String(book.pages ?? ''));
+  const [language, setLanguage] = useState(book.language || '');
+  const [publisher, setPublisher] = useState(book.publisher || '');
+  const [country, setCountry] = useState(book.country || '');
+
   const info = [
-    { label: 'Name', value: book.title },
-    { label: 'Category', value: book.category },
-    { label: 'Author', value: book.author },
-    { label: 'Edition', value: book.edition },
-    { label: 'Pages', value: String(book.pages) },
-    { label: 'Language', value: book.language },
-    { label: 'Publisher', value: book.publisher },
-    { label: 'Country', value: book.country },
+    { label: 'Name', value: title },
+    { label: 'Category', value: category },
+    { label: 'Author', value: author },
+    { label: 'Edition', value: edition },
+    { label: 'Pages', value: String(pages) },
+    { label: 'Language', value: language },
+    { label: 'Publisher', value: publisher },
+    { label: 'Country', value: country },
   ];
 
   const openPdf = async () => {
@@ -45,6 +62,80 @@ export default function BookDetailsScreen({ navigation, route }) {
       }
     } catch (e) {
       Alert.alert('PDF', e?.message || 'Failed to open PDF');
+    }
+  };
+  const saveInfo = async () => {
+    try {
+      setUpdating(true);
+      const doc = book.raw || { $id: book.id, coverFileId: book.cover, pdfFileId: book.pdfUrl };
+      await updateBookWithFiles(doc, {
+        title,
+        category,
+        author,
+        edition,
+        pages,
+        language,
+        publisher,
+        country,
+      });
+      setEditing(false);
+      Alert.alert('Saved', 'Book information updated');
+    } catch (e) {
+      Alert.alert('Error', e?.message || 'Failed to update');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+
+  const confirmDelete = () => {
+    Alert.alert('Delete Book', 'Are you sure you want to delete this book?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteBook(book.raw || { $id: book.id, coverFileId: book.pdfUrl ? book.cover : book.coverFileId, pdfFileId: book.pdfUrl || book.pdfFileId });
+            Alert.alert('Deleted', 'Book removed');
+            navigation.goBack();
+          } catch (e) {
+            Alert.alert('Error', e?.message || 'Failed to delete');
+          }
+        },
+      },
+    ]);
+  };
+
+  const pickNewFile = async (type) => {
+    if (type === 'cover') {
+      try {
+        const res = await DocumentPicker.pickSingle({ type: DocumentPicker.types.images });
+        return { uri: res.uri, name: res.name, type: res.type };
+      } catch (e) { if (!DocumentPicker.isCancel(e)) Alert.alert('Cover', 'Could not choose image'); }
+    } else {
+      try {
+        const res = await DocumentPicker.pickSingle({ type: DocumentPicker.types.pdf });
+        return { uri: res.uri, name: res.name, type: res.type };
+      } catch (e) { if (!DocumentPicker.isCancel(e)) Alert.alert('PDF', 'Could not choose file'); }
+    }
+    return null;
+  };
+
+  const replaceFile = async (kind) => {
+    const file = await pickNewFile(kind === 'cover' ? 'cover' : 'pdf');
+    if (!file) return;
+    try {
+      setUpdating(true);
+      const data = { title: book.title };
+      const opts = kind === 'cover' ? { coverFile: file } : { pdfFile: file };
+      const doc = book.raw || { $id: book.id, coverFileId: book.cover, pdfFileId: book.pdfUrl };
+      await updateBookWithFiles(doc, data, opts);
+      Alert.alert('Updated', `${kind === 'cover' ? 'Cover' : 'PDF'} replaced`);
+    } catch (e) {
+      Alert.alert('Error', e?.message || 'Update failed');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -68,16 +159,64 @@ export default function BookDetailsScreen({ navigation, route }) {
 
         <View style={styles.body}>
           <Text style={styles.title}>{book.title}</Text>
-          <Text style={styles.desc}>{book.description}</Text>
+          {!editing ? (
+            <Text style={styles.desc}>{book.description || ''}</Text>
+          ) : (
+            <View style={styles.form}>
+              <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
+              <TextInput style={styles.input} placeholder="Category" value={category} onChangeText={setCategory} />
+              <TextInput style={styles.input} placeholder="Author" value={author} onChangeText={setAuthor} />
+              <TextInput style={styles.input} placeholder="Edition" value={edition} onChangeText={setEdition} />
+              <TextInput style={styles.input} placeholder="Pages" value={pages} onChangeText={setPages} keyboardType="number-pad" />
+              <TextInput style={styles.input} placeholder="Language" value={language} onChangeText={setLanguage} />
+              <TextInput style={styles.input} placeholder="Publisher" value={publisher} onChangeText={setPublisher} />
+              <TextInput style={styles.input} placeholder="Country" value={country} onChangeText={setCountry} />
+            </View>
+          )}
 
           <View style={styles.actionsRow}>
             <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={openPdf}>
               <Text style={styles.primaryBtnText}>Open & Read</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]}> 
-              <Text style={styles.secondaryBtnText}>Add to Favorites</Text>
-            </TouchableOpacity>
+            {isAdmin && !editing ? (
+              <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={confirmDelete} disabled={updating}>
+                <Text style={styles.dangerBtnText}>{updating ? 'Working…' : 'Delete Book'}</Text>
+              </TouchableOpacity>
+            ) : !isAdmin ? (
+              <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]}> 
+                <Text style={styles.secondaryBtnText}>Add to Favorites</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={saveInfo} disabled={updating}>
+                <Text style={styles.primaryBtnText}>{updating ? 'Saving…' : 'Save'}</Text>
+              </TouchableOpacity>
+            )}
           </View>
+
+          {isAdmin && !editing && (
+            <View style={[styles.actionsRow, { marginTop: 0 }]}>
+              <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => replaceFile('cover')} disabled={updating}>
+                <Text style={styles.secondaryBtnText}>Replace Cover</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => replaceFile('pdf')} disabled={updating}>
+                <Text style={styles.secondaryBtnText}>Replace PDF</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {isAdmin && (
+            <View style={[styles.actionsRow, { marginTop: 10 }]}>
+              {!editing ? (
+                <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => setEditing(true)}>
+                  <Text style={styles.secondaryBtnText}>Edit Info</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => setEditing(false)} disabled={updating}>
+                  <Text style={styles.secondaryBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <Text style={styles.sectionTitle}>Book Information</Text>
 
@@ -128,6 +267,18 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: '#FFFFFF', fontWeight: '700' },
   secondaryBtn: { backgroundColor: '#EEF2F7' },
   secondaryBtnText: { color: '#212529', fontWeight: '700' },
+  dangerBtn: { backgroundColor: '#FDECEC' },
+  dangerBtnText: { color: '#D7263D', fontWeight: '700' },
+
+  form: { gap: 8, marginBottom: 8 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#111827',
+  },
 
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#212529', marginTop: 8, marginBottom: 10 },
 
