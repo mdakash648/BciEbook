@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image, Alert, TextInput } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -33,6 +33,9 @@ export default function DashboardScreen({ navigation }) {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [policyMetadata, setPolicyMetadata] = useState(null);
   const [aboutText, setAboutText] = useState('');
+  const [isEditingAbout, setIsEditingAbout] = useState(false);
+  const [savingAbout, setSavingAbout] = useState(false);
+  const [aboutModalVisible, setAboutModalVisible] = useState(false);
   // New Book Upload states
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
@@ -159,6 +162,19 @@ export default function DashboardScreen({ navigation }) {
       Alert.alert('Error', 'Could not save privacy policy to database. Please try again.');
     } finally {
       setSavingPrivacy(false);
+    }
+  };
+
+  const saveAbout = async () => {
+    try {
+      setSavingAbout(true);
+      await saveAboutData(aboutText);
+      setIsEditingAbout(false);
+      Alert.alert('Saved', 'About text saved to database.');
+    } catch (e) {
+      Alert.alert('Error', e?.message || String(e));
+    } finally {
+      setSavingAbout(false);
     }
   };
 
@@ -494,34 +510,61 @@ export default function DashboardScreen({ navigation }) {
 
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.card}>
-            <Text style={styles.cardSubtitle}>Add a short About text for your app</Text>
-            <View style={styles.textareaContainer}>
-              <TextInput
-                style={styles.textarea}
-                value={aboutText}
-                onChangeText={setAboutText}
-                multiline
-                textAlignVertical="top"
-                placeholder="Enter about text..."
-              />
+            <View style={styles.privacyHeader}>
+              <Text style={styles.cardTitle}>About</Text>
               <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
-                onPress={async () => {
-                  try {
-                    await saveAboutData(aboutText);
-                    Alert.alert('Saved', 'About text saved to database.');
-                  } catch (e) {
-                    Alert.alert('Error', e?.message || String(e));
-                  }
-                }}
+                style={[styles.button, styles.editButton]}
+                onPress={() => setIsEditingAbout(!isEditingAbout)}
                 activeOpacity={0.8}
               >
-                <Icon name="save-outline" size={18} color="#fff" />
-                <Text style={[styles.buttonText, styles.saveButtonText]}>Save</Text>
+                <Icon name={isEditingAbout ? 'close-outline' : 'create-outline'} size={18} color="#4A90E2" />
+                <Text style={[styles.buttonText, styles.editButtonText]}>
+                  {isEditingAbout ? 'Cancel' : 'Edit'}
+                </Text>
               </TouchableOpacity>
             </View>
+
+            <Text style={styles.cardSubtitle}>Add a short About text for your app</Text>
+
+            {isEditingAbout ? (
+              <View style={styles.textareaContainer}>
+                <TextInput
+                  style={styles.textarea}
+                  value={aboutText}
+                  onChangeText={setAboutText}
+                  multiline
+                  textAlignVertical="top"
+                  placeholder="Enter about text..."
+                />
+                <TouchableOpacity
+                  style={[styles.button, styles.saveButton]}
+                  onPress={saveAbout}
+                  disabled={savingAbout}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="save-outline" size={18} color="#fff" />
+                  <Text style={[styles.buttonText, styles.saveButtonText]}>
+                    {savingAbout ? 'Saving…' : 'Save'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              !!aboutText && (
+                <View style={styles.policyPreview}>
+                  <Text style={styles.policyText} numberOfLines={2}>
+                    {aboutText}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.viewFullButton}
+                    onPress={() => setAboutModalVisible(true)}
+                  >
+                    <Text style={styles.viewFullText}>View Full About</Text>
+                    <Icon name="arrow-forward" size={16} color="#4A90E2" />
+                  </TouchableOpacity>
+                </View>
+              )
+            )}
           </View>
         </View>
 
@@ -688,6 +731,27 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
+      {/* About Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={aboutModalVisible}
+        onRequestClose={() => setAboutModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>About</Text>
+              <TouchableOpacity onPress={() => setAboutModalVisible(false)} style={styles.modalCloseBtn}>
+                <Icon name="close" size={20} color="#212529" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
+              <Text style={styles.modalBodyText}>{aboutText}</Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -816,5 +880,27 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     marginTop: 2,
   },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: '#212529' },
+  modalCloseBtn: { padding: 4 },
+  modalBodyText: { fontSize: 14, color: '#212529', lineHeight: 20 },
 });
 
