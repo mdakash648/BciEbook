@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
 import { getAccountInstance } from '../services/appwriteService';
+import { loadPublicData } from '../services/demoPolicyService';
 
 export default function SettingsScreen({ navigation }) {
   const { user, logout, checkUser } = useAuth();
@@ -27,6 +28,19 @@ export default function SettingsScreen({ navigation }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [aboutText, setAboutText] = useState('');
+  const [showAboutModal, setShowAboutModal] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await loadPublicData();
+        setAboutText(data.about || '');
+      } catch (_) {
+        setAboutText('');
+      }
+    })();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -253,8 +267,8 @@ export default function SettingsScreen({ navigation }) {
             <SettingItem
               icon="information-circle-outline"
               title="About"
-              subtitle="App version and information"
-              onPress={() => Alert.alert('About', 'App version 1.0.0\nBuilt with React Native & Appwrite')}
+              subtitle="App information"
+              onPress={() => setShowAboutModal(true)}
             />
             
             <SettingItem
@@ -407,6 +421,39 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+      {/* About Modal */}
+      <Modal
+        visible={showAboutModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAboutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>About</Text>
+              <TouchableOpacity onPress={() => setShowAboutModal(false)} style={styles.modalCloseButton}>
+                <Icon name="close" size={24} color="#6C757D" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
+                <Text style={styles.aboutModalText}>
+                  {aboutText || 'No about text set.'}
+                </Text>
+              </ScrollView>
+            </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowAboutModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -511,6 +558,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  aboutCard: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3.84,
+    elevation: 4,
+  },
+  aboutText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#495057',
+    lineHeight: 20,
+  },
+  aboutModalText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#343A40',
   },
   settingItem: {
     flexDirection: 'row',
