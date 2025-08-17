@@ -10,7 +10,7 @@ import { loadPublicData, savePrivacyPolicyData, saveAboutData } from '../service
 import { uploadBook } from '../services/bookUploadService';
 import { createCategory, listCategories, updateCategory, deleteCategory } from '../services/categoryService';
 import DocumentPicker from 'react-native-document-picker';
-import { account } from '../lib/appwrite';
+import { account, storage } from '../lib/appwrite';
 // Database features removed
 
 const withCacheBust = (url) => {
@@ -342,13 +342,91 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
+  const testConnection = async () => {
+    try {
+      Alert.alert('Testing...', 'Checking connection and authentication...');
+      
+      // Test basic network connectivity
+      console.log('Testing network connectivity...');
+      try {
+        const response = await fetch(CONFIG.APPWRITE_ENDPOINT, {
+          method: 'GET',
+          timeout: 10000,
+        });
+        console.log('Network response status:', response.status);
+      } catch (netError) {
+        throw new Error(`Network connection failed: ${netError.message}`);
+      }
+      
+      // Test authentication
+      console.log('Testing authentication...');
+      const user = await account.get();
+      console.log('User authenticated:', user.email);
+      
+      // Test sessions
+      const sessions = await account.listSessions();
+      console.log('Active sessions:', sessions.sessions?.length || 0);
+      
+      if (!sessions.sessions || sessions.sessions.length === 0) {
+        throw new Error('No active sessions found');
+      }
+      
+      // Test JWT creation
+      const { jwt } = await account.createJWT();
+      console.log('JWT created successfully');
+      
+      // Test storage access (try to list files in bucket)
+      try {
+        const files = await storage.listFiles(CONFIG.APPWRITE_COVER_BUCKET_ID, [], 1);
+        console.log('Storage access test passed');
+      } catch (storageError) {
+        console.log('Storage access warning:', storageError.message);
+      }
+      
+      Alert.alert('Connection Test Passed', `✅ Network: Connected\n✅ Authentication: OK\n✅ User: ${user.email}\n✅ Sessions: ${sessions.sessions?.length}\n✅ JWT: Created\n✅ Storage: Accessible`);
+      
+    } catch (error) {
+      console.log('Connection test failed:', error);
+      const errorMsg = error.message || String(error);
+      
+      if (errorMsg.includes('Network connection failed')) {
+        Alert.alert('Connection Test Failed', `❌ Network Error: Unable to connect to server. Please check your internet connection.`);
+      } else if (errorMsg.includes('No active sessions')) {
+        Alert.alert('Connection Test Failed', `❌ Session Error: No active sessions. Please logout and login again.`);
+      } else if (errorMsg.includes('User (role: guests) missing scope')) {
+        Alert.alert('Connection Test Failed', `❌ Authentication Error: Please logout and login again.`);
+      } else {
+        Alert.alert('Connection Test Failed', `❌ Error: ${errorMsg}`);
+      }
+    }
+  };
+
   const submitBook = async () => {
     if (!bookTitle.trim() || !coverAsset || !pdfAsset) {
       Alert.alert('Missing info', 'Please provide title, cover image, and PDF.');
       return;
     }
+    
     try {
       setBookUploading(true);
+      
+      // Verify authentication and session before upload
+      try {
+        console.log('Checking user authentication...');
+        const user = await account.get();
+        console.log('User authenticated:', user.email);
+        
+        // Also check if we have active sessions
+        const sessions = await account.listSessions();
+        if (!sessions.sessions || sessions.sessions.length === 0) {
+          throw new Error('No active sessions found');
+        }
+        console.log('Active sessions found:', sessions.sessions.length);
+        
+      } catch (authError) {
+        console.log('Auth check failed:', authError);
+        throw new Error('Authentication failed. Please logout and login again to continue uploading.');
+      }
       const selectedNames = categories
         .filter((c) => selectedCategoryIds.includes(c.$id))
         .map((c) => c.CategorieName);
@@ -378,7 +456,20 @@ export default function DashboardScreen({ navigation }) {
       setPdfAsset(null);
       Alert.alert('Success', 'Book uploaded successfully');
     } catch (e) {
-      Alert.alert('Upload Failed', e?.message || String(e));
+      console.log('Book upload error:', e);
+      const errorMessage = e?.message || String(e);
+      
+      if (errorMessage.includes('Authentication failed') || errorMessage.includes('No active sessions')) {
+        Alert.alert('Session Expired', 'Your session has expired. Please logout and login again to continue uploading books.');
+      } else if (errorMessage.includes('Network connection failed') || errorMessage.includes('network')) {
+        Alert.alert('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (errorMessage.includes('Health check failed')) {
+        Alert.alert('Server Error', 'The server is currently unavailable. Please try again later.');
+      } else if (errorMessage.includes('Please enter') || errorMessage.includes('Please choose') || errorMessage.includes('Please select')) {
+        Alert.alert('Validation Error', errorMessage);
+      } else {
+        Alert.alert('Upload Failed', `An error occurred while uploading the book: ${errorMessage}`);
+      }
     } finally {
       setBookUploading(false);
     }
@@ -807,17 +898,27 @@ export default function DashboardScreen({ navigation }) {
               </View>
               {coverAsset && <Text style={styles.helperNote}>Cover: {coverAsset.name}</Text>}
               {pdfAsset && <Text style={styles.helperNote}>PDF: {pdfAsset.name}</Text>}
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
-                onPress={submitBook}
-                disabled={bookUploading}
-                activeOpacity={0.8}
-              >
-                <Icon name="cloud-upload-outline" size={18} color="#fff" />
-                <Text style={[styles.buttonText, styles.saveButtonText]}>
-                  {bookUploading ? 'Uploading…' : 'Upload Book'}
-                </Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={[styles.button, styles.editButton, { flex: 1 }]}
+                  onPress={testConnection}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="wifi-outline" size={18} color="#4A90E2" />
+                  <Text style={[styles.buttonText, styles.editButtonText]}>Test Connection</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.saveButton, { flex: 2 }]}
+                  onPress={submitBook}
+                  disabled={bookUploading}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="cloud-upload-outline" size={18} color="#fff" />
+                  <Text style={[styles.buttonText, styles.saveButtonText]}>
+                    {bookUploading ? 'Uploading…' : 'Upload Book'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
