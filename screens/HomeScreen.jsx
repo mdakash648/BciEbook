@@ -1,58 +1,57 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { listBooks } from '../services/bookService';
 
-const MOCK_BOOKS = [
-  {
-    id: '1',
-    title: 'The Silent Observer',
-    author: 'Amelia Stone',
-    cover: 'https://images.unsplash.com/photo-1544937950-fa07a98d237f?q=80&w=800&auto=format&fit=crop',
-  },
-  {
-    id: '2',
-    title: 'Echoes of the Past',
-    author: 'Ethan Blackwood',
-    cover: 'https://images.unsplash.com/photo-1508255139162-e1f7f2ec87fc?q=80&w=800&auto=format&fit=crop',
-  },
-  {
-    id: '3',
-    title: 'Whispers of the Wind',
-    author: 'Olivia Reed',
-    cover: 'https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?q=80&w=800&auto=format&fit=crop',
-  },
-  {
-    id: '4',
-    title: 'The Last Lighthouse Keeper',
-    author: 'Daniel Hayes',
-    cover: 'https://images.unsplash.com/photo-1512678080530-7760d81faba6?q=80&w=800&auto=format&fit=crop',
-  },
-  {
-    id: '5',
-    title: 'Secrets of the Sapphire Sea',
-    author: 'Sophia Turner',
-    cover: 'https://images.unsplash.com/photo-1482192505345-5655af888cc4?q=80&w=800&auto=format&fit=crop',
-  },
-  {
-    id: '6',
-    title: 'Beneath the Crimson Sky',
-    author: 'Caleb Walker',
-    cover: 'https://images.unsplash.com/photo-1476610182048-b716b8518aae?q=80&w=800&auto=format&fit=crop',
-  },
-];
+const MOCK_BOOKS = [];
 
 export default function HomeScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const docs = await listBooks();
+        setBooks(
+          Array.isArray(docs)
+            ? docs.map((d) => ({
+                id: d.$id,
+                title: d.title,
+                author: d.author,
+                cover: d.coverFileId, // URL stored in DB
+                category: d.category,
+                edition: d.edition,
+                pages: d.pages,
+                language: d.language,
+                publisher: d.publisher,
+                country: d.country,
+                pdfUrl: d.pdfFileId,
+                raw: d,
+              }))
+            : []
+        );
+      } catch (_) {
+        setBooks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return MOCK_BOOKS;
+    const src = books.length ? books : MOCK_BOOKS;
+    if (!query.trim()) return src;
     const q = query.toLowerCase();
-    return MOCK_BOOKS.filter(
+    return src.filter(
       (b) => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, books]);
 
   const renderBook = ({ item }) => (
     <TouchableOpacity

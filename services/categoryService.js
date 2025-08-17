@@ -20,7 +20,7 @@ async function ensureAuth() {
 	} catch (_) {}
 }
 
-export async function createCategory({ name, description }) {
+export async function createCategory({ name }) {
 	if (!name?.trim()) throw new Error('Category name is required');
 	await ensureAuth();
 	const doc = await databases.createDocument(
@@ -28,8 +28,7 @@ export async function createCategory({ name, description }) {
 		CATEGORIES_COLLECTION_ID,
 		ID.unique(),
 		{
-			name: name.trim(),
-			description: description?.trim() || '',
+			CategorieName: name.trim(),
 		},
 		[Permission.read(Role.any()), Permission.update(Role.users())]
 	);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -30,6 +30,24 @@ export default function BookDetailsScreen({ navigation, route }) {
     { label: 'Country', value: book.country },
   ];
 
+  const openPdf = async () => {
+    const url = book?.pdfUrl || book?.pdfFileId || '';
+    if (!url) {
+      Alert.alert('PDF', 'No PDF available for this book.');
+      return;
+    }
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('PDF', 'Cannot open the PDF link on this device.');
+      }
+    } catch (e) {
+      Alert.alert('PDF', e?.message || 'Failed to open PDF');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -53,7 +71,7 @@ export default function BookDetailsScreen({ navigation, route }) {
           <Text style={styles.desc}>{book.description}</Text>
 
           <View style={styles.actionsRow}>
-            <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]}>
+            <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={openPdf}>
               <Text style={styles.primaryBtnText}>Open & Read</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]}> 

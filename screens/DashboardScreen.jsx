@@ -47,7 +47,6 @@ export default function DashboardScreen({ navigation }) {
   const [bookUploading, setBookUploading] = useState(false);
   // Categories
   const [categoryName, setCategoryName] = useState('');
-  const [categoryDesc, setCategoryDesc] = useState('');
   const [categorySaving, setCategorySaving] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -188,9 +187,8 @@ export default function DashboardScreen({ navigation }) {
     }
     try {
       setCategorySaving(true);
-      await createCategory({ name: categoryName, description: categoryDesc });
+      await createCategory({ name: categoryName });
       setCategoryName('');
-      setCategoryDesc('');
       await loadCategories();
       Alert.alert('Success', 'Category created');
     } catch (e) {
@@ -205,7 +203,7 @@ export default function DashboardScreen({ navigation }) {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
       const names = categories
         .filter((c) => next.includes(c.$id))
-        .map((c) => c.name);
+        .map((c) => c.CategorieName);
       setBookCategory(names.join(', '));
       return next;
     });
@@ -262,7 +260,7 @@ export default function DashboardScreen({ navigation }) {
       setBookUploading(true);
       const selectedNames = categories
         .filter((c) => selectedCategoryIds.includes(c.$id))
-        .map((c) => c.name);
+        .map((c) => c.CategorieName);
       const categoryString = selectedNames.join(', ');
       await uploadBook({
         title: bookTitle,
@@ -540,13 +538,6 @@ export default function DashboardScreen({ navigation }) {
                 value={categoryName}
                 onChangeText={setCategoryName}
               />
-              <TextInput
-                style={[styles.textarea, { minHeight: 80, marginTop: 8 }]}
-                placeholder="Description (optional)"
-                value={categoryDesc}
-                onChangeText={setCategoryDesc}
-                multiline
-              />
               <TouchableOpacity
                 style={[styles.button, styles.saveButton]}
                 onPress={saveCategory}
@@ -569,10 +560,7 @@ export default function DashboardScreen({ navigation }) {
               ) : (
                 categories.map((c) => (
                   <View key={c.$id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E9ECEF' }}>
-                    <Text style={{ fontWeight: '600', color: '#212529' }}>{c.name}</Text>
-                    {!!c.description && (
-                      <Text style={{ color: '#6C757D', marginTop: 2 }}>{c.description}</Text>
-                    )}
+                    <Text style={{ fontWeight: '600', color: '#212529' }}>{c.CategorieName}</Text>
                   </View>
                 ))
               )}
@@ -595,21 +583,21 @@ export default function DashboardScreen({ navigation }) {
               />
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
-                placeholder="Author (optional)"
+                placeholder="Author"
                 placeholderTextColor="#6C757D"
                 value={bookAuthor}
                 onChangeText={setBookAuthor}
               />
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
-                placeholder="Edition (optional)"
+                placeholder="Edition"
                 placeholderTextColor="#6C757D"
                 value={bookEdition}
                 onChangeText={setBookEdition}
               />
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
-                placeholder="Pages (optional)"
+                placeholder="Pages"
                 placeholderTextColor="#6C757D"
                 value={bookPages}
                 onChangeText={setBookPages}
@@ -617,21 +605,21 @@ export default function DashboardScreen({ navigation }) {
               />
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
-                placeholder="Language (optional)"
+                placeholder="Language"
                 placeholderTextColor="#6C757D"
                 value={bookLanguage}
                 onChangeText={setBookLanguage}
               />
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
-                placeholder="Publisher (optional)"
+                placeholder="Publisher"
                 placeholderTextColor="#6C757D"
                 value={bookPublisher}
                 onChangeText={setBookPublisher}
               />
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
-                placeholder="Country (optional)"
+                placeholder="Country"
                 placeholderTextColor="#6C757D"
                 value={bookCountry}
                 onChangeText={setBookCountry}
@@ -662,10 +650,7 @@ export default function DashboardScreen({ navigation }) {
                         >
                           <Icon name={checked ? 'checkbox-outline' : 'square-outline'} size={20} color={checked ? '#4A90E2' : '#6C757D'} />
                           <View style={{ flex: 1 }}>
-                            <Text style={{ color: '#212529', fontWeight: '600' }}>{c.name}</Text>
-                            {!!c.description && (
-                              <Text style={{ color: '#6C757D', marginTop: 2 }}>{c.description}</Text>
-                            )}
+                            <Text style={{ color: '#212529', fontWeight: '600' }}>{c.CategorieName}</Text>
                           </View>
                         </TouchableOpacity>
                       );
