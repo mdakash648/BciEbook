@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, Alert, TextInput } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
@@ -25,8 +25,9 @@ export default function BookDetailsScreen({ navigation, route }) {
   const { user } = useContext(AuthContext);
   const isAdmin = useMemo(() => user?.role === 'admin', [user]);
   const [updating, setUpdating] = useState(false);
-  const [editing, setEditing] = useState(false);
-
+  
+  // Modal states
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [title, setTitle] = useState(book.title || '');
   const [category, setCategory] = useState(book.category || '');
   const [author, setAuthor] = useState(book.author || '');
@@ -64,7 +65,28 @@ export default function BookDetailsScreen({ navigation, route }) {
       Alert.alert('PDF', e?.message || 'Failed to open PDF');
     }
   };
+  const openEditModal = () => {
+    // Reset form values to current book data
+    setTitle(book.title || '');
+    setCategory(book.category || '');
+    setAuthor(book.author || '');
+    setEdition(book.edition || '');
+    setPages(String(book.pages ?? ''));
+    setLanguage(book.language || '');
+    setPublisher(book.publisher || '');
+    setCountry(book.country || '');
+    setEditModalVisible(true);
+  };
+
+  const closeEditModal = () => {
+    setEditModalVisible(false);
+  };
+
   const saveInfo = async () => {
+    if (!title.trim()) {
+      Alert.alert('Validation Error', 'Title is required.');
+      return;
+    }
     try {
       setUpdating(true);
       const doc = book.raw || { $id: book.id, coverFileId: book.cover, pdfFileId: book.pdfUrl };
@@ -78,8 +100,19 @@ export default function BookDetailsScreen({ navigation, route }) {
         publisher,
         country,
       });
-      setEditing(false);
-      Alert.alert('Saved', 'Book information updated');
+      closeEditModal();
+      Alert.alert('Saved', 'Book information updated successfully');
+      // Update the book object to reflect changes
+      Object.assign(book, {
+        title,
+        category,
+        author,
+        edition,
+        pages: Number(pages) || 0,
+        language,
+        publisher,
+        country,
+      });
     } catch (e) {
       Alert.alert('Error', e?.message || 'Failed to update');
     } finally {
@@ -159,41 +192,24 @@ export default function BookDetailsScreen({ navigation, route }) {
 
         <View style={styles.body}>
           <Text style={styles.title}>{book.title}</Text>
-          {!editing ? (
-            <Text style={styles.desc}>{book.description || ''}</Text>
-          ) : (
-            <View style={styles.form}>
-              <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
-              <TextInput style={styles.input} placeholder="Category" value={category} onChangeText={setCategory} />
-              <TextInput style={styles.input} placeholder="Author" value={author} onChangeText={setAuthor} />
-              <TextInput style={styles.input} placeholder="Edition" value={edition} onChangeText={setEdition} />
-              <TextInput style={styles.input} placeholder="Pages" value={pages} onChangeText={setPages} keyboardType="number-pad" />
-              <TextInput style={styles.input} placeholder="Language" value={language} onChangeText={setLanguage} />
-              <TextInput style={styles.input} placeholder="Publisher" value={publisher} onChangeText={setPublisher} />
-              <TextInput style={styles.input} placeholder="Country" value={country} onChangeText={setCountry} />
-            </View>
-          )}
+          <Text style={styles.desc}>{book.description || ''}</Text>
 
           <View style={styles.actionsRow}>
             <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={openPdf}>
               <Text style={styles.primaryBtnText}>Open & Read</Text>
             </TouchableOpacity>
-            {isAdmin && !editing ? (
+            {isAdmin ? (
               <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={confirmDelete} disabled={updating}>
                 <Text style={styles.dangerBtnText}>{updating ? 'Working…' : 'Delete Book'}</Text>
               </TouchableOpacity>
-            ) : !isAdmin ? (
+            ) : (
               <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]}> 
                 <Text style={styles.secondaryBtnText}>Add to Favorites</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={saveInfo} disabled={updating}>
-                <Text style={styles.primaryBtnText}>{updating ? 'Saving…' : 'Save'}</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          {isAdmin && !editing && (
+          {isAdmin && (
             <View style={[styles.actionsRow, { marginTop: 0 }]}>
               <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => replaceFile('cover')} disabled={updating}>
                 <Text style={styles.secondaryBtnText}>Replace Cover</Text>
@@ -205,17 +221,16 @@ export default function BookDetailsScreen({ navigation, route }) {
           )}
 
           {isAdmin && (
-            <View style={[styles.actionsRow, { marginTop: 10 }]}>
-              {!editing ? (
-                <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => setEditing(true)}>
-                  <Text style={styles.secondaryBtnText}>Edit Info</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => setEditing(false)} disabled={updating}>
-                  <Text style={styles.secondaryBtnText}>Cancel</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <TouchableOpacity style={styles.modernEditBtn} onPress={openEditModal} activeOpacity={0.8}>
+              <View style={styles.editBtnIconContainer}>
+                <Icon name="create-outline" size={20} color="#FFFFFF" />
+              </View>
+              <View style={styles.editBtnTextContainer}>
+                <Text style={styles.modernEditBtnTitle}>Edit Information</Text>
+                <Text style={styles.modernEditBtnSubtitle}>Modify book details</Text>
+              </View>
+              <Icon name="chevron-forward" size={20} color="#4A90E2" />
+            </TouchableOpacity>
           )}
 
           <Text style={styles.sectionTitle}>Book Information</Text>
@@ -232,6 +247,140 @@ export default function BookDetailsScreen({ navigation, route }) {
           </View>
         </View>
       </ScrollView>
+
+      {/* Edit Book Info Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={closeEditModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Book Information</Text>
+              <TouchableOpacity onPress={closeEditModal} style={styles.modalCloseBtn}>
+                <Icon name="close" size={20} color="#212529" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Title *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter book title"
+                    placeholderTextColor="#6C757D"
+                    value={title}
+                    onChangeText={setTitle}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Author</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter author name"
+                    placeholderTextColor="#6C757D"
+                    value={author}
+                    onChangeText={setAuthor}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Category</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter category"
+                    placeholderTextColor="#6C757D"
+                    value={category}
+                    onChangeText={setCategory}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Edition</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter edition"
+                    placeholderTextColor="#6C757D"
+                    value={edition}
+                    onChangeText={setEdition}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Pages</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter number of pages"
+                    placeholderTextColor="#6C757D"
+                    value={pages}
+                    onChangeText={setPages}
+                    keyboardType="number-pad"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Language</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter language"
+                    placeholderTextColor="#6C757D"
+                    value={language}
+                    onChangeText={setLanguage}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Publisher</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter publisher"
+                    placeholderTextColor="#6C757D"
+                    value={publisher}
+                    onChangeText={setPublisher}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Country</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter country"
+                    placeholderTextColor="#6C757D"
+                    value={country}
+                    onChangeText={setCountry}
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.cancelBtn]}
+                onPress={closeEditModal}
+                disabled={updating}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.saveBtn]}
+                onPress={saveInfo}
+                disabled={updating}
+                activeOpacity={0.8}
+              >
+                <Icon name="save-outline" size={18} color="#fff" />
+                <Text style={styles.saveBtnText}>
+                  {updating ? 'Saving…' : 'Save Changes'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -269,15 +418,62 @@ const styles = StyleSheet.create({
   secondaryBtnText: { color: '#212529', fontWeight: '700' },
   dangerBtn: { backgroundColor: '#FDECEC' },
   dangerBtnText: { color: '#D7263D', fontWeight: '700' },
+  editBtn: { backgroundColor: '#E3F2FD', flexDirection: 'row', alignItems: 'center', gap: 8 },
+  editBtnText: { color: '#4A90E2', fontWeight: '700' },
+  
+  // Modern Edit Button Styles
+  modernEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 0,
+    marginVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#F0F4F8',
+  },
+  editBtnIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  editBtnTextContainer: {
+    flex: 1,
+  },
+  modernEditBtnTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#212529',
+    marginBottom: 2,
+  },
+  modernEditBtnSubtitle: {
+    fontSize: 13,
+    color: '#6C757D',
+    fontWeight: '400',
+  },
 
-  form: { gap: 8, marginBottom: 8 },
+  form: { gap: 12 },
+  inputGroup: { marginBottom: 4 },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: '#212529', marginBottom: 6 },
   input: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     color: '#111827',
+    backgroundColor: '#FFFFFF',
   },
 
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#212529', marginTop: 8, marginBottom: 10 },
@@ -295,6 +491,56 @@ const styles = StyleSheet.create({
   infoCell: {},
   infoLabel: { fontSize: 12, color: '#6C757D', marginBottom: 2 },
   infoValue: { fontSize: 14, color: '#212529' },
+
+  // Modal styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxHeight: '90%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F5',
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#212529' },
+  modalCloseBtn: { padding: 4 },
+  modalBody: {
+    maxHeight: 400,
+    padding: 20,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F3F5',
+  },
+  modalBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+  },
+  cancelBtn: { backgroundColor: '#E9ECEF' },
+  cancelBtnText: { color: '#495057', fontWeight: '600' },
+  saveBtn: { backgroundColor: '#4A90E2' },
+  saveBtnText: { color: '#FFFFFF', fontWeight: '600' },
 });
 
 
