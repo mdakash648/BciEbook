@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image, Alert, TextInput, Modal } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image, Alert, TextInput, Modal, Keyboard, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -36,6 +36,7 @@ export default function DashboardScreen({ navigation }) {
   const [isEditingAbout, setIsEditingAbout] = useState(false);
   const [savingAbout, setSavingAbout] = useState(false);
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   // New Book Upload states
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
@@ -182,6 +183,19 @@ export default function DashboardScreen({ navigation }) {
     loadCurrentLogo();
     loadPrivacyPolicy();
     loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e) => setKeyboardInset(e?.endCoordinates?.height || 0);
+    const onHide = () => setKeyboardInset(0);
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+    return () => {
+      try { showSub.remove(); } catch (_) {}
+      try { hideSub.remove(); } catch (_) {}
+    };
   }, []);
 
   const loadCategories = async () => {
@@ -386,7 +400,7 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 + keyboardInset }} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Icon name="arrow-back" size={24} color="#4A90E2" />
