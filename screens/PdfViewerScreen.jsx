@@ -339,46 +339,6 @@ export default function PdfViewerScreen({ navigation, route }) {
     setShowControls(!isFullscreen);
   };
 
-  const openInExternalApp = async () => {
-    const urlToUse = finalPdfUrl || pdfUrl;
-    if (!urlToUse) {
-      Alert.alert('Error', 'No PDF URL available');
-      return;
-    }
-
-    try {
-      const supported = await Linking.canOpenURL(urlToUse);
-      if (supported) {
-        await Linking.openURL(urlToUse);
-      } else {
-        Alert.alert('Error', 'Cannot open PDF in external app on this device');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Failed to open PDF in external app');
-    }
-  };
-
-  const downloadPdf = async () => {
-    try {
-      console.log('Downloading PDF...');
-      const urlToUse = finalPdfUrl || pdfUrl;
-      if (!urlToUse) {
-        Alert.alert('Error', 'No PDF URL available');
-        return;
-      }
-      
-      // Try to open in external app
-      const supported = await Linking.canOpenURL(urlToUse);
-      if (supported) {
-        await Linking.openURL(urlToUse);
-      } else {
-        Alert.alert('Error', 'Cannot open PDF on this device');
-      }
-    } catch (error) {
-      console.log('Download error:', error);
-      Alert.alert('Error', 'Failed to download PDF');
-    }
-  };
 
   if (!pdfUrl) {
     return (
@@ -416,12 +376,6 @@ export default function PdfViewerScreen({ navigation, route }) {
             )}
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerAction} onPress={downloadPdf}>
-              <Icon name="download-outline" size={20} color="#4A90E2" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerAction} onPress={openInExternalApp}>
-              <Icon name="open-outline" size={20} color="#4A90E2" />
-            </TouchableOpacity>
             <TouchableOpacity style={styles.headerAction} onPress={toggleFullscreen}>
               <Icon name={isFullscreen ? "contract" : "expand"} size={20} color="#4A90E2" />
             </TouchableOpacity>
@@ -505,10 +459,7 @@ export default function PdfViewerScreen({ navigation, route }) {
                }}>
                  <Text style={styles.retryButtonText}>Try Again</Text>
                </TouchableOpacity>
-              <TouchableOpacity style={styles.externalButton} onPress={openInExternalApp}>
-                <Text style={styles.externalButtonText}>Open in External App</Text>
-              </TouchableOpacity>
-            </View>
+           </View>
           </View>
         )}
 
@@ -730,17 +681,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  externalButton: {
-    backgroundColor: '#28A745',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  externalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   bottomControls: {
     flexDirection: 'row',

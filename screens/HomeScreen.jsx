@@ -4,12 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { listBooks } from '../services/bookService';
+import AdvancedSearchFilter from '../components/AdvancedSearchFilter';
 
 const MOCK_BOOKS = [];
 
 export default function HomeScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [searchCriteria, setSearchCriteria] = useState({});
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -17,6 +19,24 @@ export default function HomeScreen({ navigation }) {
   const [hasMore, setHasMore] = useState(true);
   const [totalBooks, setTotalBooks] = useState(0);
   const [currentOffset, setCurrentOffset] = useState(0);
+
+  const handleSearchCriteriaChange = (criteria) => {
+    setSearchCriteria(criteria);
+  };
+
+  const applySearchFilters = () => {
+    // This will trigger the useMemo filter to re-run
+    console.log('Applying search filters:', searchCriteria);
+    // Load books with search criteria
+    loadInitialBooks();
+  };
+
+  const clearSearchFilters = () => {
+    setSearchCriteria({});
+    setQuery('');
+    // Reset to initial books
+    loadInitialBooks();
+  };
 
   const loadInitialBooks = async () => {
     try {
@@ -27,7 +47,19 @@ export default function HomeScreen({ navigation }) {
       
       let result;
       try {
-        result = await listBooks(6, 0); // Load initial 6 books
+        // If we have search criteria, use server-side search
+        if (Object.keys(searchCriteria).length > 0) {
+          try {
+            result = await listBooks(null, 0, searchCriteria);
+          } catch (error) {
+            console.log('Server-side search failed, falling back to client-side filtering:', error);
+            // Fallback to loading all books and filtering client-side
+            result = await listBooks();
+            // Client-side filtering will be handled in the useMemo hook
+          }
+        } else {
+          result = await listBooks(6, 0); // Load initial 6 books
+        }
         console.log('Initial books loaded:', result);
       } catch (paginationError) {
         console.log('Pagination failed, trying without limit:', paginationError);
@@ -83,6 +115,9 @@ export default function HomeScreen({ navigation }) {
   };
 
   const loadMoreBooks = async () => {
+    // Don't load more books when using search filters
+    if (Object.keys(searchCriteria).length > 0) return;
+    
     if (loadingMore || !hasMore) return;
     
     console.log(`🔄 AJAX Loading: Fetching next 4 books (offset: ${currentOffset})`);
@@ -130,12 +165,43 @@ export default function HomeScreen({ navigation }) {
 
   const filtered = useMemo(() => {
     const src = books.length ? books : MOCK_BOOKS;
+    
+    // If we have search criteria and server-side search failed, do client-side filtering
+    if (Object.keys(searchCriteria).length > 0) {
+      return src.filter((book) => {
+        // Check each search criterion
+        for (const [key, value] of Object.entries(searchCriteria)) {
+          if (!value) continue; // Skip empty criteria
+          
+          // Special handling for pages (numeric comparison)
+          if (key === 'pages') {
+            const pagesValue = parseInt(value, 10);
+            if (!isNaN(pagesValue) && book.pages !== pagesValue) {
+              return false;
+            }
+            continue;
+          }
+          
+          // For text fields, check if the book's field contains the search value
+          if (book[key] && book[key].toString().toLowerCase().includes(value.toLowerCase())) {
+            continue;
+          }
+          
+          // If we get here, this criterion didn't match
+          return false;
+        }
+        // If we get here, all criteria matched
+        return true;
+      });
+    }
+    
+    // Simple query search if no advanced criteria
     if (!query.trim()) return src;
     const q = query.toLowerCase();
     return src.filter(
       (b) => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)
     );
-  }, [query, books]);
+  }, [query, searchCriteria, books]);
 
   const renderBook = ({ item }) => (
     <TouchableOpacity
@@ -156,7 +222,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderFooter = () => {
-    if (!query.trim() && hasMore && !loading) {
+    if (!query.trim() && Object.keys(searchCriteria).length === 0 && hasMore && !loading) {
       return (
         <View style={styles.loadingFooter}>
           {loadingMore ? (
@@ -175,7 +241,7 @@ export default function HomeScreen({ navigation }) {
       );
     }
     
-    if (!query.trim() && !hasMore && books.length > 0) {
+    if (!query.trim() && Object.keys(searchCriteria).length === 0 && !hasMore && books.length > 0) {
       return (
         <View style={styles.loadingFooter}>
           <Text style={styles.endText}>✨ All books loaded!</Text>
@@ -188,7 +254,7 @@ export default function HomeScreen({ navigation }) {
 
   const handleEndReached = () => {
     // Only load more if not searching (for search, we show all filtered results)
-    if (!query.trim() && hasMore && !loadingMore && !loading) {
+    if (!query.trim() && Object.keys(searchCriteria).length === 0 && hasMore && !loadingMore && !loading) {
       loadMoreBooks();
     }
   };
@@ -224,15 +290,24 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
 
+      {/* Advanced Search Filter */}
+      <AdvancedSearchFilter
+        isVisible={filterOpen}
+        searchCriteria={searchCriteria}
+        onCriteriaChange={handleSearchCriteriaChange}
+        onApply={applySearchFilters}
+        onClear={clearSearchFilters}
+      />
+
       {/* Book Count Section */}
       <View style={styles.bookCountSection}>
         <View style={styles.bookCountContainer}>
           <Icon name="library-outline" size={20} color="#4A90E2" />
           <Text style={styles.bookCountText}>
-            {loading ? 'Loading...' : `${filtered.length} book${filtered.length !== 1 ? 's' : ''} ${query.trim() ? 'found' : 'available'}`}
+            {loading ? 'Loading...' : `${filtered.length} book${filtered.length !== 1 ? 's' : ''} ${query.trim() || Object.keys(searchCriteria).length > 0 ? 'found' : 'available'}`}
           </Text>
         </View>
-        {query.trim() && (
+        {(query.trim() || Object.keys(searchCriteria).length > 0) && (
           <Text style={styles.totalBooksText}>
             Total: {totalBooks} book{totalBooks !== 1 ? 's' : ''}
           </Text>

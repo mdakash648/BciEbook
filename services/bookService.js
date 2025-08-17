@@ -21,11 +21,11 @@ async function ensureAuth() {
 	} catch (_) {}
 }
 
-export async function listBooks(limit = null, offset = 0) {
+export async function listBooks(limit = null, offset = 0, searchCriteria = null) {
 	await ensureAuth();
 	
 	// If no limit specified, use old behavior for backward compatibility
-	if (limit === null && offset === 0) {
+	if (limit === null && offset === 0 && !searchCriteria) {
 		console.log('Using legacy listBooks (no pagination)');
 		const res = await databases.listDocuments(DATABASE_ID, BOOKS_COLLECTION_ID, [
 			Query.orderDesc('$createdAt')
@@ -33,10 +33,28 @@ export async function listBooks(limit = null, offset = 0) {
 		return res?.documents || [];
 	}
 	
-	// New pagination behavior
+	// New pagination behavior with search support
 	const queries = [
 		Query.orderDesc('$createdAt') // Add ordering to ensure consistent pagination
 	];
+	
+	// Add search queries if provided
+	if (searchCriteria && typeof searchCriteria === 'object') {
+		Object.entries(searchCriteria).forEach(([key, value]) => {
+			if (value) {
+				// For pages, we need to do exact match since it's numeric
+				if (key === 'pages') {
+					const pagesValue = parseInt(value, 10);
+					if (!isNaN(pagesValue)) {
+						queries.push(Query.equal(key, pagesValue));
+					}
+				} else {
+					// For text fields, use search query
+					queries.push(Query.search(key, value));
+				}
+			}
+		});
+	}
 	
 	if (limit !== null) {
 		queries.push(Query.limit(limit));
@@ -46,7 +64,7 @@ export async function listBooks(limit = null, offset = 0) {
 		queries.push(Query.offset(offset));
 	}
 	
-	console.log('Querying books with limit:', limit, 'offset:', offset);
+	console.log('Querying books with limit:', limit, 'offset:', offset, 'searchCriteria:', searchCriteria);
 	
 	const res = await databases.listDocuments(DATABASE_ID, BOOKS_COLLECTION_ID, queries);
 	console.log('Books query result:', { total: res?.total, count: res?.documents?.length });
