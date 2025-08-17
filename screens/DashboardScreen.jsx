@@ -8,7 +8,7 @@ import { Buffer } from 'buffer';
 import { CONFIG } from '../constants/Config';
 import { loadPublicData, savePrivacyPolicyData, saveAboutData } from '../services/demoPolicyService';
 import { uploadBook } from '../services/bookUploadService';
-import { createCategory, listCategories } from '../services/categoryService';
+import { createCategory, listCategories, updateCategory, deleteCategory } from '../services/categoryService';
 import DocumentPicker from 'react-native-document-picker';
 import { account } from '../lib/appwrite';
 // Database features removed
@@ -55,6 +55,11 @@ export default function DashboardScreen({ navigation }) {
   const [categories, setCategories] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  // Category editing states
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
+  const [categoryUpdating, setCategoryUpdating] = useState(false);
+  const [categoryDeleting, setCategoryDeleting] = useState(false);
 
   const buildLogoPreviewUrl = () => {
     const base = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${CONFIG.APPWRITE_BUCKET_ID}/files/app_logo/preview`;
@@ -226,6 +231,63 @@ export default function DashboardScreen({ navigation }) {
     } finally {
       setCategorySaving(false);
     }
+  };
+
+  const startEditCategory = (category) => {
+    setEditingCategoryId(category.$id);
+    setEditingCategoryName(category.CategorieName);
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+  };
+
+  const saveEditCategory = async () => {
+    if (!editingCategoryName.trim()) {
+      Alert.alert('Error', 'Category name cannot be empty.');
+      return;
+    }
+    try {
+      setCategoryUpdating(true);
+      await updateCategory(editingCategoryId, { name: editingCategoryName });
+      setEditingCategoryId(null);
+      setEditingCategoryName('');
+      await loadCategories();
+      Alert.alert('Success', 'Category updated');
+    } catch (e) {
+      Alert.alert('Error', e?.message || String(e));
+    } finally {
+      setCategoryUpdating(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId, categoryName) => {
+    Alert.alert(
+      'Delete Category',
+      `Are you sure you want to delete "${categoryName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setCategoryDeleting(true);
+              await deleteCategory(categoryId);
+              // Remove from selected categories if it was selected
+              setSelectedCategoryIds(prev => prev.filter(id => id !== categoryId));
+              await loadCategories();
+              Alert.alert('Success', 'Category deleted');
+            } catch (e) {
+              Alert.alert('Error', e?.message || String(e));
+            } finally {
+              setCategoryDeleting(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const toggleCategorySelect = (id) => {
@@ -582,12 +644,11 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
 
-        {/* New Book Upload */}
         {/* Categories Management */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Categories</Text>
           <View style={styles.card}>
-            <Text style={styles.cardSubtitle}>Create and view categories</Text>
+            <Text style={styles.cardSubtitle}>Create and manage categories</Text>
             <View style={styles.textareaContainer}>
               <TextInput
                 style={[styles.textarea, { minHeight: 44 }]}
@@ -609,15 +670,62 @@ export default function DashboardScreen({ navigation }) {
             </View>
 
             <View style={{ marginTop: 12 }}>
-              <Text style={[styles.cardTitle, { marginBottom: 8 }]}>Existing</Text>
+              <Text style={[styles.cardTitle, { marginBottom: 8 }]}>Existing Categories</Text>
               {categoryLoading ? (
                 <Text style={styles.helperNote}>Loading…</Text>
               ) : categories.length === 0 ? (
                 <Text style={styles.helperNote}>No categories yet.</Text>
               ) : (
                 categories.map((c) => (
-                  <View key={c.$id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E9ECEF' }}>
-                    <Text style={{ fontWeight: '600', color: '#212529' }}>{c.CategorieName}</Text>
+                  <View key={c.$id} style={styles.categoryItem}>
+                    {editingCategoryId === c.$id ? (
+                      <View style={styles.categoryEditRow}>
+                        <TextInput
+                          style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                          value={editingCategoryName}
+                          onChangeText={setEditingCategoryName}
+                          autoFocus
+                        />
+                        <TouchableOpacity
+                          style={[styles.iconButton, styles.saveIconButton]}
+                          onPress={saveEditCategory}
+                          disabled={categoryUpdating}
+                          activeOpacity={0.7}
+                        >
+                          <Icon name="checkmark" size={20} color="#28A745" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.iconButton, styles.cancelIconButton]}
+                          onPress={cancelEditCategory}
+                          disabled={categoryUpdating}
+                          activeOpacity={0.7}
+                        >
+                          <Icon name="close" size={20} color="#6C757D" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.categoryRow}>
+                        <Text style={styles.categoryName}>{c.CategorieName}</Text>
+                        <View style={styles.categoryActions}>
+                          <TouchableOpacity
+                            style={[styles.iconButton, styles.editIconButton]}
+                            onPress={() => startEditCategory(c)}
+                            disabled={categoryDeleting || editingCategoryId !== null}
+                            activeOpacity={0.7}
+                          >
+                            <Icon name="create-outline" size={18} color="#4A90E2" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.iconButton, styles.deleteIconButton]}
+                            onPress={() => handleDeleteCategory(c.$id, c.CategorieName)}
+                            disabled={categoryDeleting || editingCategoryId !== null}
+                            activeOpacity={0.7}
+                          >
+                            <Icon name="trash-outline" size={18} color="#DC3545" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
                   </View>
                 ))
               )}
@@ -916,5 +1024,50 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#212529' },
   modalCloseBtn: { padding: 4 },
   modalBodyText: { fontSize: 14, color: '#212529', lineHeight: 20 },
+  // New styles for Category Management
+  categoryItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9ECEF',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  categoryName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#212529',
+    flex: 1,
+  },
+  categoryActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  categoryEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconButton: {
+    padding: 8,
+  },
+  editIconButton: {
+    backgroundColor: '#E9ECEF',
+    borderRadius: 8,
+  },
+  deleteIconButton: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+  },
+  saveIconButton: {
+    backgroundColor: '#E9F5F5',
+    borderRadius: 8,
+  },
+  cancelIconButton: {
+    backgroundColor: '#F1F3F5',
+    borderRadius: 8,
+  },
 });
 
