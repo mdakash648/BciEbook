@@ -110,6 +110,21 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
 
+      {/* Book Count Section */}
+      <View style={styles.bookCountSection}>
+        <View style={styles.bookCountContainer}>
+          <Icon name="library-outline" size={20} color="#4A90E2" />
+          <Text style={styles.bookCountText}>
+            {loading ? 'Loading...' : `${filtered.length} book${filtered.length !== 1 ? 's' : ''} ${query.trim() ? 'found' : 'available'}`}
+          </Text>
+        </View>
+        {query.trim() && (
+          <Text style={styles.totalBooksText}>
+            Total: {books.length} book{books.length !== 1 ? 's' : ''}
+          </Text>
+        )}
+      </View>
+
       {/* Grid */}
       <FlatList
         contentContainerStyle={styles.grid}
@@ -213,5 +228,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 12,
     color: '#6C757D',
+  },
+  bookCountSection: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  bookCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bookCountText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#212529',
+  },
+  totalBooksText: {
+    fontSize: 14,
+    color: '#6C757D',
+    marginTop: 4,
+    marginLeft: 28,
   },
 });
