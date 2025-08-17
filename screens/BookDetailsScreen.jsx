@@ -63,16 +63,13 @@ export default function BookDetailsScreen({ navigation, route }) {
       Alert.alert('PDF', 'No PDF available for this book.');
       return;
     }
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('PDF', 'Cannot open the PDF link on this device.');
-      }
-    } catch (e) {
-      Alert.alert('PDF', e?.message || 'Failed to open PDF');
-    }
+    
+    // Navigate to PDF viewer screen instead of opening directly
+    navigation.navigate('PdfViewer', { 
+      pdfUrl: url, 
+      bookTitle: book.title,
+      bookAuthor: book.author 
+    });
   };
   const toggleCategorySelect = (id) => {
     setSelectedCategoryIds((prev) => {
@@ -296,6 +293,7 @@ export default function BookDetailsScreen({ navigation, route }) {
 
           <View style={styles.actionsRow}>
             <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={openPdf}>
+              <Icon name="document-text-outline" size={16} color="#FFFFFF" />
               <Text style={styles.primaryBtnText}>Open & Read</Text>
             </TouchableOpacity>
             {isAdmin ? (
@@ -546,7 +544,7 @@ const styles = StyleSheet.create({
   },
   actionsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   actionBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-  primaryBtn: { backgroundColor: '#4A90E2' },
+  primaryBtn: { backgroundColor: '#4A90E2', flexDirection: 'row', alignItems: 'center', gap: 6 },
   primaryBtnText: { color: '#FFFFFF', fontWeight: '700' },
   secondaryBtn: { backgroundColor: '#EEF2F7' },
   secondaryBtnText: { color: '#212529', fontWeight: '700' },

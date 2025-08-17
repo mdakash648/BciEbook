@@ -13,6 +13,7 @@ import EditProfileScreen from './screens/EditProfileScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import BookDetailsScreen from './screens/BookDetailsScreen';
+import PdfViewerScreen from './screens/PdfViewerScreen';
 import CustomTabBar from './components/ui/CustomTabBar';
 import AuthScreen from './screens/AuthScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
@@ -77,6 +78,7 @@ function AppContent() {
               <Stack.Screen name="Dashboard" component={DashboardScreen} />
               <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
               <Stack.Screen name="BookDetails" component={BookDetailsScreen} />
+              <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
             </>
           )}
         </Stack.Navigator>
