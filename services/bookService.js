@@ -1,4 +1,5 @@
 import { databases, storage, account, client } from '../lib/appwrite';
+import { Query } from 'appwrite';
 import { CONFIG } from '../constants/Config';
 
 const DATABASE_ID = CONFIG.APPWRITE_DATABASE_ID;
@@ -20,10 +21,40 @@ async function ensureAuth() {
 	} catch (_) {}
 }
 
-export async function listBooks() {
+export async function listBooks(limit = null, offset = 0) {
 	await ensureAuth();
-	const res = await databases.listDocuments(DATABASE_ID, BOOKS_COLLECTION_ID, []);
-	return res?.documents || [];
+	
+	// If no limit specified, use old behavior for backward compatibility
+	if (limit === null && offset === 0) {
+		console.log('Using legacy listBooks (no pagination)');
+		const res = await databases.listDocuments(DATABASE_ID, BOOKS_COLLECTION_ID, [
+			Query.orderDesc('$createdAt')
+		]);
+		return res?.documents || [];
+	}
+	
+	// New pagination behavior
+	const queries = [
+		Query.orderDesc('$createdAt') // Add ordering to ensure consistent pagination
+	];
+	
+	if (limit !== null) {
+		queries.push(Query.limit(limit));
+	}
+	
+	if (offset > 0) {
+		queries.push(Query.offset(offset));
+	}
+	
+	console.log('Querying books with limit:', limit, 'offset:', offset);
+	
+	const res = await databases.listDocuments(DATABASE_ID, BOOKS_COLLECTION_ID, queries);
+	console.log('Books query result:', { total: res?.total, count: res?.documents?.length });
+	
+	return {
+		documents: res?.documents || [],
+		total: res?.total || 0
+	};
 }
 
 export async function updateBook(documentId, data) {

@@ -12,43 +12,119 @@ export default function HomeScreen({ navigation }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
+  const [hasMore, setHasMore] = useState(true);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [currentOffset, setCurrentOffset] = useState(0);
+
+  const loadInitialBooks = async () => {
+    try {
+      setLoading(true);
+      setBooks([]);
+      setCurrentOffset(0);
+      setHasMore(true);
+      
+      let result;
+      try {
+        result = await listBooks(6, 0); // Load initial 6 books
+        console.log('Initial books loaded:', result);
+      } catch (paginationError) {
+        console.log('Pagination failed, trying without limit:', paginationError);
+        // Fallback to old method if pagination fails
+        result = await listBooks();
+        console.log('Fallback books loaded:', result);
+      }
+      
+      const refreshKey = Date.now();
+      setImageRefreshKey(refreshKey);
+      
+      // Handle both new format (with documents/total) and old format (array)
+      const documents = Array.isArray(result) ? result : (result.documents || []);
+      const total = Array.isArray(result) ? result.length : (result.total || 0);
+      
+      const formattedBooks = documents.map((d) => ({
+        id: d.$id,
+        title: d.title,
+        author: d.author,
+        cover: d.coverFileId ? `${d.coverFileId}${d.coverFileId.includes('?') ? '&' : '?'}refresh=${refreshKey}` : d.coverFileId,
+        category: d.category,
+        edition: d.edition,
+        pages: d.pages,
+        language: d.language,
+        publisher: d.publisher,
+        country: d.country,
+        pdfUrl: d.pdfFileId,
+        raw: d,
+      }));
+      
+      console.log('Formatted books:', formattedBooks.length);
+      
+      setBooks(formattedBooks);
+      setTotalBooks(total);
+      
+      if (Array.isArray(result)) {
+        // Old format - disable pagination
+        setCurrentOffset(formattedBooks.length);
+        setHasMore(false);
+      } else {
+        // New format - enable pagination
+        setCurrentOffset(6);
+        setHasMore(documents.length === 6 && total > 6);
+      }
+      
+    } catch (error) {
+      console.log('Error loading books:', error);
+      setBooks([]);
+      setTotalBooks(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMoreBooks = async () => {
+    if (loadingMore || !hasMore) return;
+    
+    console.log(`🔄 AJAX Loading: Fetching next 4 books (offset: ${currentOffset})`);
+    
+    try {
+      setLoadingMore(true);
+      const result = await listBooks(4, currentOffset); // Load next 4 books
+      const refreshKey = imageRefreshKey;
+      
+      const formattedBooks = result.documents.map((d) => ({
+        id: d.$id,
+        title: d.title,
+        author: d.author,
+        cover: d.coverFileId ? `${d.coverFileId}${d.coverFileId.includes('?') ? '&' : '?'}refresh=${refreshKey}` : d.coverFileId,
+        category: d.category,
+        edition: d.edition,
+        pages: d.pages,
+        language: d.language,
+        publisher: d.publisher,
+        country: d.country,
+        pdfUrl: d.pdfFileId,
+        raw: d,
+      }));
+      
+      setBooks(prevBooks => {
+        const newBooks = [...prevBooks, ...formattedBooks];
+        console.log(`✅ AJAX Success: Added ${formattedBooks.length} books. Total: ${newBooks.length}`);
+        return newBooks;
+      });
+      setCurrentOffset(prev => prev + 4);
+      setHasMore(result.documents.length === 4 && currentOffset + 4 < result.total);
+      
+    } catch (error) {
+      console.log('Error loading more books:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useFocusEffect(
     React.useCallback(() => {
-      const load = async () => {
-        try {
-          setLoading(true);
-          const docs = await listBooks();
-          // Add cache busting to cover images
-          const refreshKey = Date.now();
-          setImageRefreshKey(refreshKey);
-          
-          setBooks(
-            Array.isArray(docs)
-              ? docs.map((d) => ({
-                  id: d.$id,
-                  title: d.title,
-                  author: d.author,
-                  cover: d.coverFileId ? `${d.coverFileId}${d.coverFileId.includes('?') ? '&' : '?'}refresh=${refreshKey}` : d.coverFileId,
-                  category: d.category,
-                  edition: d.edition,
-                  pages: d.pages,
-                  language: d.language,
-                  publisher: d.publisher,
-                  country: d.country,
-                  pdfUrl: d.pdfFileId,
-                  raw: d,
-                }))
-              : []
-          );
-        } catch (_) {
-          setBooks([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-      load();
+      loadInitialBooks();
     }, [])
   );
 
@@ -78,6 +154,44 @@ export default function HomeScreen({ navigation }) {
       <Text numberOfLines={1} style={styles.bookAuthor}>{item.author}</Text>
     </TouchableOpacity>
   );
+
+  const renderFooter = () => {
+    if (!query.trim() && hasMore && !loading) {
+      return (
+        <View style={styles.loadingFooter}>
+          {loadingMore ? (
+            <>
+              <Text style={styles.loadingText}>Loading next 4 books...</Text>
+              <View style={styles.loadingDots}>
+                <Text style={styles.loadingDot}>•</Text>
+                <Text style={styles.loadingDot}>•</Text>
+                <Text style={styles.loadingDot}>•</Text>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.scrollHint}>Scroll down to load more books</Text>
+          )}
+        </View>
+      );
+    }
+    
+    if (!query.trim() && !hasMore && books.length > 0) {
+      return (
+        <View style={styles.loadingFooter}>
+          <Text style={styles.endText}>✨ All books loaded!</Text>
+        </View>
+      );
+    }
+    
+    return null;
+  };
+
+  const handleEndReached = () => {
+    // Only load more if not searching (for search, we show all filtered results)
+    if (!query.trim() && hasMore && !loadingMore && !loading) {
+      loadMoreBooks();
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -120,7 +234,7 @@ export default function HomeScreen({ navigation }) {
         </View>
         {query.trim() && (
           <Text style={styles.totalBooksText}>
-            Total: {books.length} book{books.length !== 1 ? 's' : ''}
+            Total: {totalBooks} book{totalBooks !== 1 ? 's' : ''}
           </Text>
         )}
       </View>
@@ -133,6 +247,9 @@ export default function HomeScreen({ navigation }) {
         numColumns={2}
         columnWrapperStyle={{ gap: 16 }}
         renderItem={renderBook}
+        ListFooterComponent={renderFooter}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -249,5 +366,35 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     marginTop: 4,
     marginLeft: 28,
+  },
+  loadingFooter: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#4A90E2',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  loadingDots: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  loadingDot: {
+    fontSize: 16,
+    color: '#4A90E2',
+    fontWeight: 'bold',
+  },
+  scrollHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  endText: {
+    fontSize: 14,
+    color: '#28A745',
+    fontWeight: '600',
   },
 });
