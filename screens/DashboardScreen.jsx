@@ -8,7 +8,7 @@ import { Buffer } from 'buffer';
 import { CONFIG } from '../constants/Config';
 import { loadPublicData, savePrivacyPolicyData, saveAboutData } from '../services/demoPolicyService';
 import { uploadBook } from '../services/bookUploadService';
-import { createCategory, listCategories } from '../services/categoryService';
+import { createCategory, listCategories, updateCategory, deleteCategory } from '../services/categoryService';
 import DocumentPicker from 'react-native-document-picker';
 import { account } from '../lib/appwrite';
 // Database features removed
@@ -55,6 +55,13 @@ export default function DashboardScreen({ navigation }) {
   const [categories, setCategories] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  // Category edit/delete states
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [categoryUpdating, setCategoryUpdating] = useState(false);
 
   const buildLogoPreviewUrl = () => {
     const base = `${CONFIG.APPWRITE_ENDPOINT}/storage/buckets/${CONFIG.APPWRITE_BUCKET_ID}/files/app_logo/preview`;
@@ -225,6 +232,60 @@ export default function DashboardScreen({ navigation }) {
       Alert.alert('Error', e?.message || String(e));
     } finally {
       setCategorySaving(false);
+    }
+  };
+
+  const openEditCategory = (category) => {
+    setEditingCategory(category);
+    setEditCategoryName(category.CategorieName);
+    setEditModalVisible(true);
+  };
+
+  const closeEditCategory = () => {
+    setEditingCategory(null);
+    setEditCategoryName('');
+    setEditModalVisible(false);
+  };
+
+  const updateCategoryHandler = async () => {
+    if (!editCategoryName.trim()) {
+      Alert.alert('Category', 'Please enter a category name.');
+      return;
+    }
+    try {
+      setCategoryUpdating(true);
+      await updateCategory({ id: editingCategory.$id, name: editCategoryName });
+      await loadCategories();
+      closeEditCategory();
+      Alert.alert('Success', 'Category updated');
+    } catch (e) {
+      Alert.alert('Error', e?.message || String(e));
+    } finally {
+      setCategoryUpdating(false);
+    }
+  };
+
+  const openDeleteCategory = (category) => {
+    setDeletingCategory(category);
+    setDeleteModalVisible(true);
+  };
+
+  const closeDeleteCategory = () => {
+    setDeletingCategory(null);
+    setDeleteModalVisible(false);
+  };
+
+  const deleteCategoryHandler = async () => {
+    try {
+      setCategoryUpdating(true);
+      await deleteCategory(deletingCategory.$id);
+      await loadCategories();
+      closeDeleteCategory();
+      Alert.alert('Success', 'Category deleted');
+    } catch (e) {
+      Alert.alert('Error', e?.message || String(e));
+    } finally {
+      setCategoryUpdating(false);
     }
   };
 
@@ -616,8 +677,24 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.helperNote}>No categories yet.</Text>
               ) : (
                 categories.map((c) => (
-                  <View key={c.$id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E9ECEF' }}>
-                    <Text style={{ fontWeight: '600', color: '#212529' }}>{c.CategorieName}</Text>
+                  <View key={c.$id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E9ECEF', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontWeight: '600', color: '#212529', flex: 1 }}>{c.CategorieName}</Text>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => openEditCategory(c)}
+                        style={{ padding: 4, borderRadius: 6, backgroundColor: '#E3F2FD' }}
+                        activeOpacity={0.7}
+                      >
+                        <Icon name="create-outline" size={16} color="#1976D2" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => openDeleteCategory(c)}
+                        style={{ padding: 4, borderRadius: 6, backgroundColor: '#FFEBEE' }}
+                        activeOpacity={0.7}
+                      >
+                        <Icon name="trash-outline" size={16} color="#D32F2F" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ))
               )}
@@ -763,6 +840,97 @@ export default function DashboardScreen({ navigation }) {
             <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
               <Text style={styles.modalBodyText}>{aboutText}</Text>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Category Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={closeEditCategory}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Category</Text>
+              <TouchableOpacity onPress={closeEditCategory} style={styles.modalCloseBtn}>
+                <Icon name="close" size={20} color="#212529" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.textareaContainer}>
+              <TextInput
+                style={[styles.input, { marginTop: 0 }]}
+                placeholder="Category name"
+                placeholderTextColor="#6C757D"
+                value={editCategoryName}
+                onChangeText={setEditCategoryName}
+                autoFocus={true}
+              />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+              <TouchableOpacity
+                style={[styles.button, styles.editButton, { flex: 1 }]}
+                onPress={closeEditCategory}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.buttonText, styles.editButtonText]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, { flex: 1, marginTop: 0 }]}
+                onPress={updateCategoryHandler}
+                disabled={categoryUpdating}
+                activeOpacity={0.8}
+              >
+                <Icon name="save-outline" size={18} color="#fff" />
+                <Text style={[styles.buttonText, styles.saveButtonText]}>
+                  {categoryUpdating ? 'Saving…' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Category Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteModalVisible}
+        onRequestClose={closeDeleteCategory}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Delete Category</Text>
+              <TouchableOpacity onPress={closeDeleteCategory} style={styles.modalCloseBtn}>
+                <Icon name="close" size={20} color="#212529" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalBodyText}>
+              Are you sure you want to delete "{deletingCategory?.CategorieName}"? This action cannot be undone.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+              <TouchableOpacity
+                style={[styles.button, styles.editButton, { flex: 1 }]}
+                onPress={closeDeleteCategory}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.buttonText, styles.editButtonText]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: '#D32F2F', flex: 1 }]}
+                onPress={deleteCategoryHandler}
+                disabled={categoryUpdating}
+                activeOpacity={0.8}
+              >
+                <Icon name="trash-outline" size={18} color="#fff" />
+                <Text style={[styles.buttonText, { color: '#fff' }]}>
+                  {categoryUpdating ? 'Deleting…' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

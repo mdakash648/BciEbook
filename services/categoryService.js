@@ -41,4 +41,26 @@ export async function listCategories() {
 	return res?.documents || [];
 }
 
+export async function updateCategory({ id, name }) {
+	if (!id) throw new Error('Category ID is required');
+	if (!name?.trim()) throw new Error('Category name is required');
+	await ensureAuth();
+	const doc = await databases.updateDocument(
+		DATABASE_ID,
+		CATEGORIES_COLLECTION_ID,
+		id,
+		{
+			CategorieName: name.trim(),
+		}
+	);
+	return doc;
+}
+
+export async function deleteCategory(id) {
+	if (!id) throw new Error('Category ID is required');
+	await ensureAuth();
+	await databases.deleteDocument(DATABASE_ID, CATEGORIES_COLLECTION_ID, id);
+	return true;
+}
+
 
