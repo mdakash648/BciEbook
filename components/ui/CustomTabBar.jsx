@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { BlurView } from '@react-native-community/blur';
+// Temporarily disabled BlurView due to native module issues
+// import { BlurView } from '@react-native-community/blur';
 
 const TAB_ICONS = {
   Home: { icon: 'home-outline', activeIcon: 'home', label: 'Home' },
@@ -53,7 +54,7 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
     <View style={[styles.container, { borderRadius: BAR_RADIUS }]}> 
       <View style={[styles.tabBarWrapper, { width: barWidth, borderRadius: BAR_RADIUS }]}>        
         <View style={[styles.inner, { borderRadius: BAR_RADIUS }]}>        
-          <BlurView blurType="light" blurAmount={20} style={styles.blurBackground} overlayColor="transparent" />
+          <View style={[styles.blurBackground, { backgroundColor: 'rgba(255, 255, 255, 0.8)' }]} />
           <View pointerEvents="none" style={styles.blurOverlay} />
           <Animated.View
             style={[

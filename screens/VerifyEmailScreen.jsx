@@ -69,7 +69,7 @@ export default function VerifyEmailScreen({ navigation }) {
         <View style={styles.content}>
           <View style={styles.header}>
             <Ionicons name="mail-unread-outline" size={80} color="#4A90E2" />
-            <Text style={styles.title}>Verify your email</Text>
+            <Text style={styles.title}>BCI E-LIBRARY - Verify your email</Text>
             <Text style={styles.subtitle}>
               Please verify your email address to continue. Check your inbox for a message with a verification link.
             </Text>

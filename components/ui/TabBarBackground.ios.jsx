@@ -1,14 +1,12 @@
 import React from 'react';
-import { BlurView } from '@react-native-community/blur';
-import { StyleSheet } from 'react-native';
+// Temporarily disabled BlurView due to native module issues
+// import { BlurView } from '@react-native-community/blur';
+import { StyleSheet, View } from 'react-native';
 
 export default function BlurTabBarBackground() {
   return (
-    <BlurView
-      blurType="light"
-      blurAmount={20}
-      style={StyleSheet.absoluteFill}
-      overlayColor="transparent"
+    <View
+      style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.8)' }]}
     />
   );
 }

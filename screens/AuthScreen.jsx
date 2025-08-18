@@ -152,7 +152,7 @@ export default function AuthScreen({ route, navigation }) {
               </View>
             )}
 
-            {!isLogin && <Text style={styles.helperText}>Password must be at least 6 characters long</Text>}
+            {!isLogin && <Text style={styles.helperText}>Password must be at least 8 characters long</Text>}
 
             <TouchableOpacity style={[styles.authButton, loading && styles.authButtonDisabled]} onPress={handleSubmit} disabled={loading}>
               <Text style={styles.authButtonText}>{loading ? 'Loading...' : isLogin ? 'Sign In' : 'Sign Up'}</Text>

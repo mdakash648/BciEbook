@@ -141,18 +141,7 @@ export default function PdfViewerScreen({ navigation, route }) {
     }
   };
 
-  // Test if PDF URL is accessible
-  const testPdfUrl = async (url) => {
-    try {
-      console.log('Testing PDF URL accessibility:', url);
-      const response = await fetch(url, { method: 'HEAD' });
-      console.log('PDF URL test response:', response.status, response.statusText);
-      return response.ok;
-    } catch (error) {
-      console.log('PDF URL test failed:', error);
-      return false;
-    }
-  };
+
   
   // Check if local PDF file exists
   const checkLocalPdfExists = async (fileUri) => {
@@ -375,11 +364,11 @@ export default function PdfViewerScreen({ navigation, route }) {
               <Text style={styles.headerSubtitle} numberOfLines={1}>by {bookAuthor}</Text>
             )}
           </View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerAction} onPress={toggleFullscreen}>
-              <Icon name={isFullscreen ? "contract" : "expand"} size={20} color="#4A90E2" />
-            </TouchableOpacity>
-          </View>
+                     <View style={styles.headerActions}>
+             <TouchableOpacity style={styles.headerAction} onPress={toggleFullscreen}>
+               <Icon name={isFullscreen ? "contract" : "expand"} size={20} color="#4A90E2" />
+             </TouchableOpacity>
+           </View>
         </View>
       )}
 
@@ -402,40 +391,7 @@ export default function PdfViewerScreen({ navigation, route }) {
             <Text style={styles.errorTitle}>Failed to Load PDF</Text>
             <Text style={styles.errorMessage}>{error}</Text>
             
-            {/* Debug Info */}
-            <View style={styles.debugContainer}>
-              <Text style={styles.debugText}>Debug Info:</Text>
-              <Text style={styles.debugText}>Original URL: {pdfUrl}</Text>
-              <Text style={styles.debugText}>Final Path: {finalPdfUrl}</Text>
-                          <TouchableOpacity 
-              style={styles.testButton} 
-              onPress={async () => {
-                if (finalPdfUrl) {
-                  const isAccessible = await testPdfUrl(finalPdfUrl);
-                  Alert.alert(
-                    'URL Test Result', 
-                    isAccessible ? 'URL is accessible!' : 'URL is not accessible. Try external app.'
-                  );
-                }
-              }}
-            >
-              <Text style={styles.testButtonText}>Test URL Accessibility</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.testButton, { marginTop: 8, backgroundColor: '#17A2B8' }]} 
-              onPress={async () => {
-                // Test with a simple PDF URL
-                const testPdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-                console.log('Testing with dummy PDF:', testPdfUrl);
-                setFinalPdfUrl(testPdfUrl);
-                setError(null);
-                setLoading(false);
-                setPdfLoaded(false);
-              }}
-            >
-              <Text style={styles.testButtonText}>Test with Dummy PDF</Text>
-            </TouchableOpacity>
-            </View>
+
             
             <View style={styles.errorActions}>
               <TouchableOpacity style={styles.retryButton} onPress={async () => {
@@ -638,33 +594,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
-  debugContainer: {
-    backgroundColor: '#F8F9FA',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#6C757D',
-    fontFamily: 'monospace',
-    marginBottom: 4,
-  },
-  testButton: {
-    backgroundColor: '#FFC107',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginTop: 8,
-    alignSelf: 'center',
-  },
-  testButtonText: {
-    color: '#212529',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+
   retryButton: {
     backgroundColor: '#4A90E2',
     paddingHorizontal: 24,

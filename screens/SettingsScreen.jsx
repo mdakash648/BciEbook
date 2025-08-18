@@ -15,7 +15,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
 import { getAccountInstance } from '../services/appwriteService';
 import { loadPublicData } from '../services/demoPolicyService';
-import { debugDatabaseConnection, manualTestRoleSync } from '../services/userService';
 import { account } from '../lib/appwrite';
 
 export default function SettingsScreen({ navigation }) {
@@ -98,63 +97,7 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
-  const handleDebugDatabase = async () => {
-    try {
-      const debugResult = await debugDatabaseConnection();
-      
-      if (debugResult.success) {
-        Alert.alert(
-          'Database Debug Info',
-          `Connection: ✅ Success\nTotal Users: ${debugResult.totalDocuments}\n\nCheck console for detailed logs.`,
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert(
-          'Database Debug Error',
-          `Connection: ❌ Failed\nError: ${debugResult.error}\n\nCheck console for details.`,
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('Debug database error:', error);
-      Alert.alert('Error', 'Failed to debug database connection');
-    }
-  };
 
-  const handleManualRoleTest = async () => {
-    try {
-      // Get current user data
-      const currentUser = await account.get();
-      const labels = Array.isArray(currentUser?.labels) ? currentUser.labels : [];
-      
-      console.log('🧪 Starting manual role test...');
-      console.log('👤 Current user:', currentUser);
-      console.log('🏷️ Labels:', labels);
-      
-      const testResult = await manualTestRoleSync(
-        currentUser.$id,
-        labels,
-        currentUser.email
-      );
-      
-      if (testResult.success) {
-        Alert.alert(
-          'Manual Role Test',
-          `Test: ✅ Success\nRole Changed: ${testResult.roleChanged ? 'Yes' : 'No'}\nMessage: ${testResult.message}\n\nCheck console for detailed logs.`,
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert(
-          'Manual Role Test Error',
-          `Test: ❌ Failed\nError: ${testResult.error}\nStep: ${testResult.step}\n\nCheck console for details.`,
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('Manual role test error:', error);
-      Alert.alert('Error', 'Failed to run manual role test');
-    }
-  };
 
   const handleChangePassword = () => {
     setShowChangePasswordModal(true);
@@ -353,19 +296,7 @@ export default function SettingsScreen({ navigation }) {
               onPress={() => navigation.navigate('PrivacyPolicy')}
             />
 
-            <SettingItem
-              icon="bug-outline"
-              title="Debug Database"
-              subtitle="Test database connection and list users"
-              onPress={handleDebugDatabase}
-            />
 
-            <SettingItem
-              icon="flask-outline"
-              title="Manual Role Test"
-              subtitle="Test role sync with detailed logging"
-              onPress={handleManualRoleTest}
-            />
           </View>
         </View>
         {/* Danger Zone */}
@@ -384,7 +315,7 @@ export default function SettingsScreen({ navigation }) {
         {/* App Info */}
         <View style={styles.appInfo}>
           <Text style={styles.appVersion}>Version 1.0.0</Text>
-          <Text style={styles.appCopyright}>© 2025 My App. All rights reserved.</Text>
+          <Text style={styles.appCopyright}>© 2025 BCI E-LIBRARY. All rights reserved.</Text>
         </View>
       </ScrollView>
       {/* Change Password Modal */}

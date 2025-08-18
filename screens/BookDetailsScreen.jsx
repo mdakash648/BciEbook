@@ -1,11 +1,12 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { deleteBook, updateBookWithFiles } from '../services/bookService';
 import { listCategories } from '../services/categoryService';
-import * as DocumentPicker from 'react-native-document-picker';
+import { addToFavorites, removeFromFavorites, isBookFavorited } from '../services/favoritesService';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 
 export default function BookDetailsScreen({ navigation, route }) {
   const book = route?.params?.book || {
@@ -26,6 +27,10 @@ export default function BookDetailsScreen({ navigation, route }) {
   const { user } = useContext(AuthContext);
   const isAdmin = useMemo(() => user?.role === 'admin', [user]);
   const [updating, setUpdating] = useState(false);
+  
+  // Favorite states
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   
   // Modal states
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -57,6 +62,41 @@ export default function BookDetailsScreen({ navigation, route }) {
     { label: 'Country', value: country },
   ];
 
+  // Check if book is favorited when component loads
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      // Get book ID from either $id or id property
+      const bookId = book.$id || book.id;
+      
+      console.log('Checking favorite status for book:', {
+        userId: user?.$id,
+        bookId: bookId,
+        bookTitle: book.title,
+        bookAuthor: book.author
+      });
+      
+      if (user && bookId) {
+        try {
+          const result = await isBookFavorited(bookId);
+          if (result.success) {
+            setIsFavorited(result.isFavorited);
+          } else {
+            console.error('Failed to check favorite status:', result.error);
+          }
+        } catch (error) {
+          console.error('Error checking favorite status:', error);
+        }
+      } else {
+        console.log('Cannot check favorite status:', {
+          hasUser: !!user,
+          hasBookId: !!bookId
+        });
+      }
+    };
+
+    checkFavoriteStatus();
+  }, [user, book.$id, book.id]);
+
   const openPdf = async () => {
     const url = book?.pdfUrl || book?.pdfFileId || '';
     if (!url) {
@@ -70,6 +110,54 @@ export default function BookDetailsScreen({ navigation, route }) {
       bookTitle: book.title,
       bookAuthor: book.author 
     });
+  };
+
+  // Toggle favorite status
+  const toggleFavorite = async () => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please login to add books to favorites.');
+      return;
+    }
+
+    if (favoriteLoading) return;
+
+    // Get book ID from either $id or id property
+    const bookId = book.$id || book.id;
+
+    console.log('Toggling favorite for book:', {
+      bookId: bookId,
+      bookTitle: book.title,
+      bookAuthor: book.author,
+      isFavorited
+    });
+
+    setFavoriteLoading(true);
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        const result = await removeFromFavorites(bookId);
+        if (result.success) {
+          setIsFavorited(false);
+          Alert.alert('Success', 'Book removed from favorites');
+        } else {
+          Alert.alert('Error', result.error || 'Failed to remove from favorites');
+        }
+      } else {
+        // Add to favorites
+        const result = await addToFavorites(bookId, book.title, book.author);
+        if (result.success) {
+          setIsFavorited(true);
+          Alert.alert('Success', 'Book added to favorites');
+        } else {
+          Alert.alert('Error', result.error || 'Failed to add to favorites');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setFavoriteLoading(false);
+    }
   };
   const toggleCategorySelect = (id) => {
     setSelectedCategoryIds((prev) => {
@@ -187,14 +275,26 @@ export default function BookDetailsScreen({ navigation, route }) {
   const pickNewFile = async (type) => {
     if (type === 'cover') {
       try {
-        const res = await DocumentPicker.pickSingle({ type: DocumentPicker.types.images });
-        return { uri: res.uri, name: res.name, type: res.type };
-      } catch (e) { if (!DocumentPicker.isCancel(e)) Alert.alert('Cover', 'Could not choose image'); }
+        const result = await launchImageLibrary({
+          mediaType: 'photo',
+          quality: 0.8,
+          includeBase64: false,
+        });
+        
+        if (result.assets && result.assets.length > 0) {
+          const asset = result.assets[0];
+          return { 
+            uri: asset.uri, 
+            name: asset.fileName || `image_${Date.now()}.jpg`, 
+            type: asset.type || 'image/jpeg' 
+          };
+        }
+      } catch (e) {
+        Alert.alert('Cover', 'Could not choose image');
+      }
     } else {
-      try {
-        const res = await DocumentPicker.pickSingle({ type: DocumentPicker.types.pdf });
-        return { uri: res.uri, name: res.name, type: res.type };
-      } catch (e) { if (!DocumentPicker.isCancel(e)) Alert.alert('PDF', 'Could not choose file'); }
+      // For PDF, we'll use a simple alert for now since we removed document picker
+      Alert.alert('PDF Upload', 'PDF upload functionality is temporarily disabled. Please use the web interface for PDF uploads.');
     }
     return null;
   };
@@ -296,19 +396,27 @@ export default function BookDetailsScreen({ navigation, route }) {
               <Icon name="document-text-outline" size={16} color="#FFFFFF" />
               <Text style={styles.primaryBtnText}>Open & Read</Text>
             </TouchableOpacity>
-            {isAdmin ? (
-              <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={confirmDelete} disabled={updating}>
-                <Text style={styles.dangerBtnText}>{updating ? 'Working…' : 'Delete Book'}</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]}> 
-                <Text style={styles.secondaryBtnText}>Add to Favorites</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={[styles.actionBtn, styles.secondaryBtn, isFavorited && styles.favoritedBtn]} 
+              onPress={toggleFavorite}
+              disabled={favoriteLoading}
+            > 
+              <Icon 
+                name={isFavorited ? "heart" : "heart-outline"} 
+                size={16} 
+                color={isFavorited ? "#FF6B6B" : "#4A90E2"} 
+              />
+              <Text style={[styles.secondaryBtnText, isFavorited && styles.favoritedText]}>
+                {favoriteLoading ? 'Working...' : (isFavorited ? '  Remove' : 'Add to Favorites')}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {isAdmin && (
             <View style={[styles.actionsRow, { marginTop: 0 }]}>
+              <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={confirmDelete} disabled={updating}>
+                <Text style={styles.dangerBtnText}>{updating ? 'Working…' : 'Delete Book'}</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => replaceFile('cover')} disabled={updating}>
                 <Text style={styles.secondaryBtnText}>Replace Cover</Text>
               </TouchableOpacity>
@@ -712,6 +820,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+  },
+  
+  // Favorite button styles
+  favoritedBtn: {
+    backgroundColor: '#FFE5E5',
+    borderColor: '#FF6B6B',
+  },
+  favoritedText: {
+    color: '#FF6B6B',
   },
   selectedCategoriesLabel: {
     fontSize: 12,

@@ -1,6 +1,6 @@
-# BciEbook - React Native CLI App
+# BCI E-LIBRARY - React Native CLI App
 
-A React Native CLI application with Appwrite backend integration, featuring user authentication, file uploads, and a complete e-book library interface.
+A React Native CLI application with Appwrite backend integration, featuring user authentication, file uploads, and a complete e-book library interface for BCI E-LIBRARY.
 
 ## Features
 
@@ -34,7 +34,7 @@ A React Native CLI application with Appwrite backend integration, featuring user
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd BciEbook
+   cd BCI-E-LIBRARY
    ```
 
 2. **Install dependencies**
@@ -70,7 +70,7 @@ export const CONFIG = {
 ## Project Structure
 
 ```
-BciEbook/
+BCI-E-LIBRARY/
 ├── components/
 │   └── ui/
 │       └── CustomTabBar.jsx

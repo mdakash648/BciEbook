@@ -368,33 +368,7 @@ export default function EditProfileScreen({ navigation }) {
           </TouchableOpacity>
         </View>
         
-        {/* Debug Section */}
-        <View style={styles.debugSection}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.debugButton]} 
-            onPress={async () => {
-              try {
-                if (user?.id) {
-                  const dbResult = await getUserFromDatabase(user.id);
-                  if (dbResult.success) {
-                    Alert.alert(
-                      'Database User Data',
-                      `Full Name: ${dbResult.user.FullName || 'N/A'}\nEmail: ${dbResult.user.EmailAddress || 'N/A'}\nPhone: ${dbResult.user.PhoneNuber || 'N/A'}\nAddress: ${dbResult.user.Address || 'N/A'}\nRole: ${dbResult.user.role || 'N/A'}`,
-                      [{ text: 'OK' }]
-                    );
-                  } else {
-                    Alert.alert('Database Error', dbResult.error, [{ text: 'OK' }]);
-                  }
-                }
-              } catch (error) {
-                Alert.alert('Error', error.message, [{ text: 'OK' }]);
-              }
-            }}
-          >
-            <Icon name="bug-outline" size={20} color="#6C757D" />
-            <Text style={styles.debugButtonText}>View Database Data</Text>
-          </TouchableOpacity>
-        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -544,19 +518,5 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 8,
   },
-  debugSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-  },
-  debugButton: {
-    backgroundColor: '#F8F9FA',
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  debugButtonText: {
-    color: '#6C757D',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
+
 });
