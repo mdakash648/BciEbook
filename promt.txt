@@ -1,0 +1,36 @@
+You are an expert React + Appwrite full-stack developer.  
+I want you to create a system using React and Appwrite where:  
+I am already have a register login forget Authentication system. don't chagne my current Authentication system
+
+Database Info:  
+- databaseId = "68a0e8730015131520a3"  
+- collectionId = "users"  
+- Attributes:  
+  - FullName (string)  
+  - EmailAddress (string)  
+  - PhoneNuber (string)  
+  - Address (string)  
+  - role (string) → this should be fetched from Appwrite Auth user labels, not from register form  
+  - createdAt (datetime)  
+
+Permissions:  
+- Role: Users (Create, Read, Update, Delete = true)  
+
+Requirements:  
+
+2. After successful signup, insert a document into the `users` collection with the following data:  
+   - FullName → from register form  
+   - EmailAddress → from register form  
+   - PhoneNuber → from update account form  
+   - Address → from update account form  
+   - role → get from Appwrite Auth user.labels 
+   - createdAt → new Date().toISOString()  
+   - authUserId → get from Appwrite Auth account.get() 
+3. Make sure Appwrite `authUserId` is used internally to link auth user with the database document.  
+4. Provide functions:  
+   - signupAndSave(fullName, email, password, ) on database
+5. Write clean React code with Appwrite SDK, using async/await and proper error handling.  
+6. Add inline comments to explain each part.  
+
+Tech stack:  
+- React + Appwrite SDK (JavaScript)  

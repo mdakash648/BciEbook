@@ -12,6 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
 import { getAccountInstance } from '../services/appwriteService';
+import { updateUserProfileInDatabase, getUserFromDatabase } from '../services/userService';
+import { account } from '../lib/appwrite';
 
 // Convert Appwrite E.164 phone (e.g., +8801812345678) to local BD format (e.g., 01812345678)
 const phoneE164ToLocal = (input) => {
@@ -61,6 +63,43 @@ export default function EditProfileScreen({ navigation }) {
     setEditAddress(user?.address || '');
   }, [user]);
 
+  // Load database data when component mounts
+  useEffect(() => {
+    const loadDatabaseData = async () => {
+      try {
+        if (user?.id) {
+          console.log('🔄 Loading database data for user:', user.id);
+          const dbResult = await getUserFromDatabase(user.id);
+          
+          if (dbResult.success) {
+            const dbUser = dbResult.user;
+            console.log('✅ Database user data:', dbUser);
+            
+            // Update form fields with database data if available
+            if (dbUser.FullName && !editName) {
+              setEditName(dbUser.FullName);
+            }
+            if (dbUser.EmailAddress && !editEmail) {
+              setEditEmail(dbUser.EmailAddress);
+            }
+            if (dbUser.PhoneNuber && !editPhone) {
+              setEditPhone(phoneE164ToLocal(dbUser.PhoneNuber));
+            }
+            if (dbUser.Address && !editAddress) {
+              setEditAddress(dbUser.Address);
+            }
+          } else {
+            console.log('⚠️ No database data found for user');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading database data:', error);
+      }
+    };
+
+    loadDatabaseData();
+  }, [user?.id]);
+
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
       Alert.alert('Error', 'Please enter your name');
@@ -90,17 +129,24 @@ export default function EditProfileScreen({ navigation }) {
       const accountInstance = getAccountInstance();
       if (accountInstance) {
         let updateCount = 0;
+        let databaseUpdateData = {};
+        
+        // Step 1: Update Appwrite Auth
         if (hasNameChanged) {
           await accountInstance.updateName(editName.trim());
           updateCount++;
+          databaseUpdateData.FullName = editName.trim();
         }
         if (hasPhoneChanged) {
           try {
             const fullPhoneNumber = phoneLocalToE164(editPhone.trim());
             await accountInstance.updatePhone(fullPhoneNumber, password);
             updateCount++;
+            databaseUpdateData.PhoneNuber = fullPhoneNumber;
           } catch (phoneError) {
             Alert.alert('Phone Update Failed', phoneError.message || 'Failed to update phone number. Please check your password.');
+            setIsUpdatingProfile(false);
+            return;
           }
         }
         if (hasAddressChanged) {
@@ -112,25 +158,50 @@ export default function EditProfileScreen({ navigation }) {
             };
             await accountInstance.updatePrefs(updatedPrefs);
             updateCount++;
+            databaseUpdateData.Address = editAddress.trim();
           } catch (addressError) {
             Alert.alert('Address Update Failed', addressError.message || 'Failed to update address.');
+            setIsUpdatingProfile(false);
+            return;
           }
         }
-        if (updateCount > 0) {
-          await checkUser();
-          Alert.alert('Success', 'Profile updated successfully', [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack()
+        
+        // Step 2: Update Database
+        if (updateCount > 0 && Object.keys(databaseUpdateData).length > 0) {
+          try {
+            console.log('🔄 Updating database with profile changes...');
+            const currentUser = await account.get();
+            const databaseResult = await updateUserProfileInDatabase(
+              currentUser.$id,
+              databaseUpdateData
+            );
+            
+            if (!databaseResult.success) {
+              console.warn('⚠️ Database update failed:', databaseResult.error);
+              // Don't fail the entire operation, just log the warning
+              // The Auth update was successful, so we can still show success
+            } else {
+              console.log('✅ Database updated successfully');
             }
-          ]);
-        } else {
-          Alert.alert('No Changes', 'No changes were made');
+          } catch (dbError) {
+            console.error('❌ Database update error:', dbError);
+            // Don't fail the entire operation, just log the error
+          }
         }
+        
+        // Step 3: Refresh user data and show success
+        await checkUser();
+        Alert.alert('Success', 'Profile updated successfully', [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }
+        ]);
       } else {
         Alert.alert('Error', 'Unable to update profile. Please try again.');
       }
     } catch (error) {
+      console.error('❌ Profile update error:', error);
       Alert.alert('Error', error.message || 'Failed to update profile');
     } finally {
       setIsUpdatingProfile(false);
@@ -296,6 +367,34 @@ export default function EditProfileScreen({ navigation }) {
             <Text style={styles.cancelActionButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
+        
+        {/* Debug Section */}
+        <View style={styles.debugSection}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.debugButton]} 
+            onPress={async () => {
+              try {
+                if (user?.id) {
+                  const dbResult = await getUserFromDatabase(user.id);
+                  if (dbResult.success) {
+                    Alert.alert(
+                      'Database User Data',
+                      `Full Name: ${dbResult.user.FullName || 'N/A'}\nEmail: ${dbResult.user.EmailAddress || 'N/A'}\nPhone: ${dbResult.user.PhoneNuber || 'N/A'}\nAddress: ${dbResult.user.Address || 'N/A'}\nRole: ${dbResult.user.role || 'N/A'}`,
+                      [{ text: 'OK' }]
+                    );
+                  } else {
+                    Alert.alert('Database Error', dbResult.error, [{ text: 'OK' }]);
+                  }
+                }
+              } catch (error) {
+                Alert.alert('Error', error.message, [{ text: 'OK' }]);
+              }
+            }}
+          >
+            <Icon name="bug-outline" size={20} color="#6C757D" />
+            <Text style={styles.debugButtonText}>View Database Data</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -443,6 +542,21 @@ const styles = StyleSheet.create({
   },
   passwordToggle: {
     padding: 8,
+    marginLeft: 8,
+  },
+  debugSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  debugButton: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  debugButtonText: {
+    color: '#6C757D',
+    fontSize: 16,
+    fontWeight: '600',
     marginLeft: 8,
   },
 });

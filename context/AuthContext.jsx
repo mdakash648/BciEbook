@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useState } from 
 import { ID } from 'appwrite';
 import { account } from '../lib/appwrite';
 import RNFS from 'react-native-fs';
+import { saveUserToDatabase, syncUserRoleFromLabels, checkAndSyncUserRole } from '../services/userService';
 
 export const AuthContext = createContext(null);
 
@@ -27,7 +28,19 @@ export const AuthProvider = ({ children }) => {
   const checkUser = useCallback(async () => {
     try {
       const currentUser = await account.get();
-      setUser(mapAppwriteUser(currentUser));
+      
+      // Check and sync user role from labels on every user check
+      const labels = Array.isArray(currentUser?.labels) ? currentUser.labels : [];
+      const syncResult = await checkAndSyncUserRole(currentUser.$id, labels, currentUser.email);
+      
+      if (syncResult.success && syncResult.roleChanged) {
+        console.log('Role synced during user check:', syncResult.message);
+        // If role changed, we need to re-fetch the user data to get updated role
+        const updatedUser = await account.get();
+        setUser(mapAppwriteUser(updatedUser));
+      } else {
+        setUser(mapAppwriteUser(currentUser));
+      }
     } catch (error) {
       setUser(null);
     } finally {
@@ -76,15 +89,45 @@ export const AuthProvider = ({ children }) => {
 
   const register = useCallback(async (email, password, name) => {
     try {
+      // Step 1: Create user account in Appwrite Auth
       await account.create(ID.unique(), email, password, name);
+      
+      // Step 2: Create session and get user data
       try {
         await account.deleteSession('current');
       } catch (e) {}
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get();
+      
+      // Step 3: Extract user role from labels
+      const labels = Array.isArray(currentUser?.labels) ? currentUser.labels : [];
+      const role = labels.includes('admin') ? 'admin' : 'user';
+      
+      // Step 4: Save user data to database
+      const saveResult = await saveUserToDatabase(
+        name, // FullName from registration form
+        email, // EmailAddress from registration form
+        currentUser.$id, // authUserId from Appwrite Auth
+        role // role from Appwrite Auth labels
+      );
+      
+      if (!saveResult.success) {
+        // If database save fails, we should handle this gracefully
+        // The user is already created in Auth, so we don't want to fail completely
+        console.warn('Failed to save user to database:', saveResult.error);
+        // You might want to implement a retry mechanism here
+      }
+      
+      // Step 5: Map and set user data
       const mapped = mapAppwriteUser(currentUser);
       setUser(mapped);
-      return { success: true, user: mapped };
+      
+      return { 
+        success: true, 
+        user: mapped,
+        databaseSaved: saveResult.success,
+        databaseError: saveResult.error
+      };
     } catch (error) {
       return { success: false, error: error?.message || 'Registration failed' };
     }
@@ -94,7 +137,51 @@ export const AuthProvider = ({ children }) => {
     checkUser();
   }, [checkUser]);
 
-  const value = useMemo(() => ({ user, loading, checkUser, logout, login, register }), [user, loading, checkUser, logout, login, register]);
+  const syncUserRole = useCallback(async () => {
+    try {
+      const currentUser = await account.get();
+      const labels = Array.isArray(currentUser?.labels) ? currentUser.labels : [];
+      
+      const syncResult = await syncUserRoleFromLabels(
+        currentUser.$id, 
+        labels, 
+        currentUser.email // Pass email for fallback lookup
+      );
+      
+      if (syncResult.success && syncResult.roleChanged) {
+        // Re-fetch user data to get updated role
+        const updatedUser = await account.get();
+        setUser(mapAppwriteUser(updatedUser));
+        return {
+          success: true,
+          roleChanged: true,
+          message: syncResult.message
+        };
+      } else {
+        return {
+          success: true,
+          roleChanged: false,
+          message: syncResult.message
+        };
+      }
+    } catch (error) {
+      console.error('Error syncing user role:', error);
+      return {
+        success: false,
+        error: error?.message || 'Failed to sync user role'
+      };
+    }
+  }, []);
+
+  const value = useMemo(() => ({ 
+    user, 
+    loading, 
+    checkUser, 
+    logout, 
+    login, 
+    register, 
+    syncUserRole 
+  }), [user, loading, checkUser, logout, login, register, syncUserRole]);
 
   return (
     <AuthContext.Provider value={value}>

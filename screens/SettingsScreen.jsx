@@ -15,9 +15,11 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
 import { getAccountInstance } from '../services/appwriteService';
 import { loadPublicData } from '../services/demoPolicyService';
+import { debugDatabaseConnection, manualTestRoleSync } from '../services/userService';
+import { account } from '../lib/appwrite';
 
 export default function SettingsScreen({ navigation }) {
-  const { user, logout, checkUser } = useAuth();
+  const { user, logout, checkUser, syncUserRole } = useAuth();
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -72,12 +74,85 @@ export default function SettingsScreen({ navigation }) {
   const handleRefreshUser = async () => {
     setIsRefreshing(true);
     try {
-      await checkUser();
-      Alert.alert('Success', 'User data refreshed successfully');
+      // Sync user role from Appwrite Auth labels to database
+      const syncResult = await syncUserRole();
+      
+      if (syncResult.success) {
+        if (syncResult.roleChanged) {
+          Alert.alert(
+            'Role Updated', 
+            `Your role has been updated: ${syncResult.message}`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert('Success', 'User data refreshed successfully. Role is up to date.');
+        }
+      } else {
+        Alert.alert('Error', syncResult.error || 'Failed to refresh user data');
+      }
     } catch (error) {
+      console.error('Refresh user error:', error);
       Alert.alert('Error', 'Failed to refresh user data');
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleDebugDatabase = async () => {
+    try {
+      const debugResult = await debugDatabaseConnection();
+      
+      if (debugResult.success) {
+        Alert.alert(
+          'Database Debug Info',
+          `Connection: ✅ Success\nTotal Users: ${debugResult.totalDocuments}\n\nCheck console for detailed logs.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Database Debug Error',
+          `Connection: ❌ Failed\nError: ${debugResult.error}\n\nCheck console for details.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Debug database error:', error);
+      Alert.alert('Error', 'Failed to debug database connection');
+    }
+  };
+
+  const handleManualRoleTest = async () => {
+    try {
+      // Get current user data
+      const currentUser = await account.get();
+      const labels = Array.isArray(currentUser?.labels) ? currentUser.labels : [];
+      
+      console.log('🧪 Starting manual role test...');
+      console.log('👤 Current user:', currentUser);
+      console.log('🏷️ Labels:', labels);
+      
+      const testResult = await manualTestRoleSync(
+        currentUser.$id,
+        labels,
+        currentUser.email
+      );
+      
+      if (testResult.success) {
+        Alert.alert(
+          'Manual Role Test',
+          `Test: ✅ Success\nRole Changed: ${testResult.roleChanged ? 'Yes' : 'No'}\nMessage: ${testResult.message}\n\nCheck console for detailed logs.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Manual Role Test Error',
+          `Test: ❌ Failed\nError: ${testResult.error}\nStep: ${testResult.step}\n\nCheck console for details.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Manual role test error:', error);
+      Alert.alert('Error', 'Failed to run manual role test');
     }
   };
 
@@ -276,6 +351,20 @@ export default function SettingsScreen({ navigation }) {
               title="Privacy Policy"
               subtitle="Read our privacy policy"
               onPress={() => navigation.navigate('PrivacyPolicy')}
+            />
+
+            <SettingItem
+              icon="bug-outline"
+              title="Debug Database"
+              subtitle="Test database connection and list users"
+              onPress={handleDebugDatabase}
+            />
+
+            <SettingItem
+              icon="flask-outline"
+              title="Manual Role Test"
+              subtitle="Test role sync with detailed logging"
+              onPress={handleManualRoleTest}
             />
           </View>
         </View>

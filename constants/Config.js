@@ -5,6 +5,7 @@ export const CONFIG = {
   APPWRITE_BUCKET_ID: '68a0a1f80010ebd8d6b1',
   APPWRITE_DATABASE_ID: '68a0e8730015131520a3',
   APPWRITE_COLLECTION_ID: '68a0ed8a00248ee6e2fe',
+  APPWRITE_USERS_COLLECTION_ID: 'users',
   PASSWORD_RESET_URL: 'https://bciebook.free.nf/',
   PASSWORD_RESET_SDK_URL: 'https://bciebook.free.nf/',
   OAUTH_BRIDGE_URL: 'https://bciebook.free.nf/oauth-bridge.html',
