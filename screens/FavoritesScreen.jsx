@@ -3,10 +3,12 @@ import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Alert, Ref
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { getUserFavorites, removeFromFavorites } from '../services/favoritesService';
 
 export default function FavoritesScreen({ navigation }) {
   const { user } = useContext(AuthContext);
+  const { theme } = useTheme();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,13 +96,13 @@ export default function FavoritesScreen({ navigation }) {
   // Show login prompt if user is not logged in
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.center}>
-          <Icon name="heart-outline" size={64} color="#6C757D" />
-          <Text style={styles.title}>Favorites</Text>
-          <Text style={styles.subtitle}>Please login to view your favorite books</Text>
+          <Icon name="heart-outline" size={64} color={theme.textSecondary} />
+          <Text style={[styles.title, { color: theme.text }]}>BCI E-LIBRARY Favorites</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Please login to view your favorite books</Text>
           <TouchableOpacity 
-            style={styles.loginBtn} 
+            style={[styles.loginBtn, { backgroundColor: theme.primary }]} 
             onPress={() => navigation.navigate('Auth')}
           >
             <Text style={styles.loginBtnText}>Login</Text>
@@ -113,34 +115,34 @@ export default function FavoritesScreen({ navigation }) {
   // Show loading state
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.center}>
-          <Icon name="heart-outline" size={64} color="#6C757D" />
-          <Text style={styles.title}>Favorites</Text>
-          <Text style={styles.subtitle}>Loading your favorite books...</Text>
+          <Icon name="heart-outline" size={64} color={theme.textSecondary} />
+          <Text style={[styles.title, { color: theme.text }]}>BCI E-LIBRARY Favorites</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Loading your favorite books...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Favorites</Text>
-        <Text style={styles.headerSubtitle}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-LIBRARY Favorites</Text>
+        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
           {favorites.length} {favorites.length === 1 ? 'book' : 'books'} in your collection
         </Text>
       </View>
 
       {favorites.length === 0 ? (
         <View style={styles.center}>
-          <Icon name="heart-outline" size={64} color="#6C757D" />
-          <Text style={styles.title}>No Favorite Books Yet</Text>
-          <Text style={styles.subtitle}>
+          <Icon name="heart-outline" size={64} color={theme.textSecondary} />
+          <Text style={[styles.title, { color: theme.text }]}>No Favorite Books Yet</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Start exploring books and add them to your favorites to see them here
           </Text>
           <TouchableOpacity 
-            style={styles.browseBtn} 
+            style={[styles.browseBtn, { backgroundColor: theme.primary }]} 
             onPress={() => navigation.navigate('Home')}
           >
             <Text style={styles.browseBtnText}>Browse Books</Text>
@@ -156,19 +158,19 @@ export default function FavoritesScreen({ navigation }) {
           {favorites.map((favorite) => (
             <TouchableOpacity
               key={favorite.$id}
-              style={styles.favoriteCard}
+              style={[styles.favoriteCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}
               onPress={() => openBookDetails(favorite)}
               activeOpacity={0.7}
             >
               <View style={styles.favoriteContent}>
                 <View style={styles.bookInfo}>
-                  <Text style={styles.bookTitle} numberOfLines={2}>
+                  <Text style={[styles.bookTitle, { color: theme.text }]} numberOfLines={2}>
                     {favorite.bookTitle}
                   </Text>
-                  <Text style={styles.bookAuthor} numberOfLines={1}>
+                  <Text style={[styles.bookAuthor, { color: theme.textSecondary }]} numberOfLines={1}>
                     by {favorite.bookAuthor}
                   </Text>
-                  <Text style={styles.addedDate}>
+                  <Text style={[styles.addedDate, { color: theme.textMuted }]}>
                     Added {new Date(favorite.addedAt).toLocaleDateString()}
                   </Text>
                 </View>

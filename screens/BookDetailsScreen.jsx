@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, A
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { deleteBook, updateBookWithFiles } from '../services/bookService';
 import { listCategories } from '../services/categoryService';
 import { addToFavorites, removeFromFavorites, isBookFavorited } from '../services/favoritesService';
@@ -25,6 +26,7 @@ export default function BookDetailsScreen({ navigation, route }) {
   };
 
   const { user } = useContext(AuthContext);
+  const { theme } = useTheme();
   const isAdmin = useMemo(() => user?.role === 'admin', [user]);
   const [updating, setUpdating] = useState(false);
   
@@ -364,15 +366,15 @@ export default function BookDetailsScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={22} color="#212529" />
+          <Icon name="chevron-back" size={22} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Book Details</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-LIBRARY Book Details</Text>
         <TouchableOpacity style={styles.headerBtn}>
-          <Icon name="share-outline" size={20} color="#212529" />
+          <Icon name="share-outline" size={20} color={theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -388,25 +390,25 @@ export default function BookDetailsScreen({ navigation, route }) {
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.title}>{book.title}</Text>
-          <Text style={styles.desc}>{book.description || ''}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{book.title}</Text>
+          <Text style={[styles.desc, { color: theme.textSecondary }]}>{book.description || ''}</Text>
 
           <View style={styles.actionsRow}>
-            <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]} onPress={openPdf}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={openPdf}>
               <Icon name="document-text-outline" size={16} color="#FFFFFF" />
               <Text style={styles.primaryBtnText}>Open & Read</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.actionBtn, styles.secondaryBtn, isFavorited && styles.favoritedBtn]} 
+              style={[styles.actionBtn, { backgroundColor: theme.secondary }, isFavorited && { backgroundColor: theme.favoriteLight }]} 
               onPress={toggleFavorite}
               disabled={favoriteLoading}
             > 
               <Icon 
                 name={isFavorited ? "heart" : "heart-outline"} 
                 size={16} 
-                color={isFavorited ? "#FF6B6B" : "#4A90E2"} 
+                color={isFavorited ? theme.favorite : theme.primary} 
               />
-              <Text style={[styles.secondaryBtnText, isFavorited && styles.favoritedText]}>
+              <Text style={[styles.secondaryBtnText, { color: theme.text }, isFavorited && { color: theme.favorite }]}>
                 {favoriteLoading ? 'Working...' : (isFavorited ? '  Remove' : 'Add to Favorites')}
               </Text>
             </TouchableOpacity>
@@ -414,39 +416,39 @@ export default function BookDetailsScreen({ navigation, route }) {
 
           {isAdmin && (
             <View style={[styles.actionsRow, { marginTop: 0 }]}>
-              <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={confirmDelete} disabled={updating}>
-                <Text style={styles.dangerBtnText}>{updating ? 'Working…' : 'Delete Book'}</Text>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.danger }]} onPress={confirmDelete} disabled={updating}>
+                <Text style={[styles.dangerBtnText, { color: theme.dangerText }]}>{updating ? 'Working…' : 'Delete Book'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => replaceFile('cover')} disabled={updating}>
-                <Text style={styles.secondaryBtnText}>Replace Cover</Text>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.secondary }]} onPress={() => replaceFile('cover')} disabled={updating}>
+                <Text style={[styles.secondaryBtnText, { color: theme.text }]}>Replace Cover</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => replaceFile('pdf')} disabled={updating}>
-                <Text style={styles.secondaryBtnText}>Replace PDF</Text>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.secondary }]} onPress={() => replaceFile('pdf')} disabled={updating}>
+                <Text style={[styles.secondaryBtnText, { color: theme.text }]}>Replace PDF</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {isAdmin && (
-            <TouchableOpacity style={styles.modernEditBtn} onPress={openEditModal} activeOpacity={0.8}>
-              <View style={styles.editBtnIconContainer}>
+            <TouchableOpacity style={[styles.modernEditBtn, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={openEditModal} activeOpacity={0.8}>
+              <View style={[styles.editBtnIconContainer, { backgroundColor: theme.primary }]}>
                 <Icon name="create-outline" size={20} color="#FFFFFF" />
               </View>
               <View style={styles.editBtnTextContainer}>
-                <Text style={styles.modernEditBtnTitle}>Edit Information</Text>
-                <Text style={styles.modernEditBtnSubtitle}>Modify book details</Text>
+                <Text style={[styles.modernEditBtnTitle, { color: theme.text }]}>Edit Information</Text>
+                <Text style={[styles.modernEditBtnSubtitle, { color: theme.textSecondary }]}>Modify book details</Text>
               </View>
-              <Icon name="chevron-forward" size={20} color="#4A90E2" />
+              <Icon name="chevron-forward" size={20} color={theme.primary} />
             </TouchableOpacity>
           )}
 
-          <Text style={styles.sectionTitle}>Book Information</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Book Information</Text>
 
-          <View style={styles.infoTable}>
+          <View style={[styles.infoTable, { borderTopColor: theme.border }]}>
             {info.map((row, idx) => (
-              <View key={row.label} style={[styles.infoRow, idx % 2 === 0 && styles.infoRowSplit]}>
+              <View key={row.label} style={[styles.infoRow, { borderBottomColor: theme.border }]}>
                 <View style={styles.infoCell}> 
-                  <Text style={styles.infoLabel}>{row.label}</Text>
-                  <Text style={styles.infoValue}>{row.value}</Text>
+                  <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>{row.label}</Text>
+                  <Text style={[styles.infoValue, { color: theme.text }]}>{row.value}</Text>
                 </View>
               </View>
             ))}
@@ -461,12 +463,12 @@ export default function BookDetailsScreen({ navigation, route }) {
         visible={editModalVisible}
         onRequestClose={closeEditModal}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Book Information</Text>
+        <View style={[styles.modalBackdrop, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.modal }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Edit Book Information</Text>
               <TouchableOpacity onPress={closeEditModal} style={styles.modalCloseBtn}>
-                <Icon name="close" size={20} color="#212529" />
+                <Icon name="close" size={20} color={theme.text} />
               </TouchableOpacity>
             </View>
             

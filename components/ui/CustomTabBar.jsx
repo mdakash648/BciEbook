@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
 // Temporarily disabled BlurView due to native module issues
 // import { BlurView } from '@react-native-community/blur';
 
@@ -15,10 +16,10 @@ const ICON_SIZE = 25;
 const ICON_SIZE_ACTIVE = 30;
 const BAR_HEIGHT = 68;
 const BAR_RADIUS = BAR_HEIGHT / 2; // 50%
-const INDICATOR_COLOR = '#3b82f6';
 const HORIZONTAL_PADDING = 32;
 
 export default function CustomTabBar({ state, descriptors, navigation }) {
+  const { theme } = useTheme();
   const { width } = Dimensions.get('window');
   const barWidth = width * 0.85;
 
@@ -54,13 +55,15 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
     <View style={[styles.container, { borderRadius: BAR_RADIUS }]}> 
       <View style={[styles.tabBarWrapper, { width: barWidth, borderRadius: BAR_RADIUS }]}>        
         <View style={[styles.inner, { borderRadius: BAR_RADIUS }]}>        
-          <View style={[styles.blurBackground, { backgroundColor: 'rgba(255, 255, 255, 0.8)' }]} />
+          <View style={[styles.blurBackground, { backgroundColor: theme.isDarkMode ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)' }]} />
           <View pointerEvents="none" style={styles.blurOverlay} />
           <Animated.View
             style={[
               styles.indicator,
               {
                 left: indicatorAnim,
+                backgroundColor: theme.primary,
+                shadowColor: theme.primary,
               },
             ]}
           />
@@ -87,8 +90,8 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
                   </View>
                 ) : (
                   <View style={styles.inactiveIconWrapper}>
-                    <Ionicons name={iconName} size={ICON_SIZE} color={INDICATOR_COLOR} style={styles.inactiveIcon} />
-                    <Text style={styles.tabLabel}>{iconConfig.label || ''}</Text>
+                    <Ionicons name={iconName} size={ICON_SIZE} color={theme.tabBarInactive} style={styles.inactiveIcon} />
+                    <Text style={[styles.tabLabel, { color: theme.tabBarInactive }]}>{iconConfig.label || ''}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -140,11 +143,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: INDICATOR_SIZE,
     height: INDICATOR_SIZE,
-    backgroundColor: INDICATOR_COLOR,
     borderRadius: INDICATOR_SIZE / 2,
     top: -INDICATOR_SIZE / 2 + BAR_HEIGHT / 2,
     zIndex: 1,
-    shadowColor: INDICATOR_COLOR,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
     shadowRadius: 16,
@@ -178,7 +179,6 @@ const styles = StyleSheet.create({
   tabLabel: {
     marginTop: 4,
     fontSize: 13,
-    color: INDICATOR_COLOR,
     fontWeight: '600',
     letterSpacing: 0.2,
   },

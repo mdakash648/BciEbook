@@ -3,12 +3,14 @@ import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Image } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { listBooks } from '../services/bookService';
 import AdvancedSearchFilter from '../components/AdvancedSearchFilter';
 
 const MOCK_BOOKS = [];
 
 export default function HomeScreen({ navigation }) {
+  const { theme } = useTheme();
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchCriteria, setSearchCriteria] = useState({});
@@ -206,7 +208,7 @@ export default function HomeScreen({ navigation }) {
   const renderBook = ({ item }) => (
     <TouchableOpacity
       activeOpacity={0.9}
-      style={styles.card}
+      style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}
       onPress={() => navigation.navigate('BookDetails', { book: item })}
     >
       <View style={styles.coverWrap}>
@@ -216,8 +218,8 @@ export default function HomeScreen({ navigation }) {
           key={`${item.id}-${imageRefreshKey}`} // Force re-render with refresh key
         />
       </View>
-      <Text numberOfLines={2} style={styles.bookTitle}>{item.title}</Text>
-      <Text numberOfLines={1} style={styles.bookAuthor}>{item.author}</Text>
+      <Text numberOfLines={2} style={[styles.bookTitle, { color: theme.text }]}>{item.title}</Text>
+      <Text numberOfLines={1} style={[styles.bookAuthor, { color: theme.textSecondary }]}>{item.author}</Text>
     </TouchableOpacity>
   );
 
@@ -227,15 +229,15 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.loadingFooter}>
           {loadingMore ? (
             <>
-              <Text style={styles.loadingText}>Loading next 4 books...</Text>
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading next 4 books...</Text>
               <View style={styles.loadingDots}>
-                <Text style={styles.loadingDot}>•</Text>
-                <Text style={styles.loadingDot}>•</Text>
-                <Text style={styles.loadingDot}>•</Text>
+                <Text style={[styles.loadingDot, { color: theme.primary }]}>•</Text>
+                <Text style={[styles.loadingDot, { color: theme.primary }]}>•</Text>
+                <Text style={[styles.loadingDot, { color: theme.primary }]}>•</Text>
               </View>
             </>
           ) : (
-            <Text style={styles.scrollHint}>Scroll down to load more books</Text>
+            <Text style={[styles.scrollHint, { color: theme.textSecondary }]}>Scroll down to load more books</Text>
           )}
         </View>
       );
@@ -244,7 +246,7 @@ export default function HomeScreen({ navigation }) {
     if (!query.trim() && Object.keys(searchCriteria).length === 0 && !hasMore && books.length > 0) {
       return (
         <View style={styles.loadingFooter}>
-          <Text style={styles.endText}>✨ All books loaded!</Text>
+          <Text style={[styles.endText, { color: theme.textSecondary }]}>✨ All books loaded!</Text>
         </View>
       );
     }
@@ -260,32 +262,32 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.header}> 
-        <Text style={styles.headerTitle}>Library</Text>
+      <View style={[styles.header, { borderBottomColor: theme.border }]}> 
+        <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-LIBRARY</Text>
       </View>
 
       <View style={styles.toolbar}>
         <TouchableOpacity
-          style={styles.filterChip}
+          style={[styles.filterChip, { backgroundColor: theme.secondary }]}
           activeOpacity={0.8}
           onPress={() => setFilterOpen((v) => !v)}
         >
-          <Text style={styles.filterText}>Filter</Text>
-          <Icon name={filterOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#4A4A4A" />
+          <Text style={[styles.filterText, { color: theme.text }]}>Filter</Text>
+          <Icon name={filterOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.text} />
         </TouchableOpacity>
       </View>
 
       {/* Search */}
-      <View style={styles.searchBox}>
-        <Icon name="search" size={18} color="#6C757D" />
+      <View style={[styles.searchBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Icon name="search" size={18} color={theme.textSecondary} />
         <TextInput
           placeholder="Search for books"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={theme.textMuted}
           value={query}
           onChangeText={setQuery}
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: theme.text }]}
           autoCapitalize="none"
         />
       </View>

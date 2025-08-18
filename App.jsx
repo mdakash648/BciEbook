@@ -20,6 +20,7 @@ import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import VerifyEmailScreen from './screens/VerifyEmailScreen';
 import { useAuth } from './hooks/useAuth';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -43,12 +44,18 @@ function TabNavigator() {
 // Main App Component
 function AppContent() {
   const { user, loading } = useAuth();
+  const { theme, isLoading: themeLoading } = useTheme();
 
-  if (loading) {
+  if (loading || themeLoading) {
     return (
       <SafeAreaProvider>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#4A90E2" />
+        <View style={{ 
+          flex: 1, 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          backgroundColor: theme.background 
+        }}>
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       </SafeAreaProvider>
     );
@@ -89,8 +96,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

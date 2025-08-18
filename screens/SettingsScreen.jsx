@@ -13,19 +13,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import { getAccountInstance } from '../services/appwriteService';
 import { loadPublicData } from '../services/demoPolicyService';
 import { account } from '../lib/appwrite';
 
 export default function SettingsScreen({ navigation }) {
   const { user, logout, checkUser, syncUserRole } = useAuth();
+  const { theme, isDarkMode, toggleTheme } = useTheme();
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -174,94 +175,94 @@ export default function SettingsScreen({ navigation }) {
     showCheckmark = false
   }) => (
     <TouchableOpacity 
-      style={[styles.settingItem, destructive && styles.destructiveItem]} 
+      style={[styles.settingItem, { borderBottomColor: theme.border }, destructive && styles.destructiveItem]} 
       onPress={onPress}
       disabled={showSwitch || loading}
     >
       <View style={styles.settingItemLeft}>
         <View style={[styles.iconContainer, destructive && styles.destructiveIcon]}>
           {loading ? (
-            <Icon name="refresh" size={20} color="#4A90E2" style={{ opacity: 0.6 }} />
+            <Icon name="refresh" size={20} color={theme.primary} style={{ opacity: 0.6 }} />
           ) : showCheckmark ? (
-            <Icon name="checkmark-circle" size={20} color="#28A745" />
+            <Icon name="checkmark-circle" size={20} color={theme.successText} />
           ) : (
-            <Icon name={icon} size={20} color={destructive ? '#FF6B6B' : '#4A90E2'} />
+            <Icon name={icon} size={20} color={destructive ? theme.dangerText : theme.primary} />
           )}
         </View>
         <View style={styles.settingText}>
-          <Text style={[styles.settingTitle, destructive && styles.destructiveText]}>{title}</Text>
-          {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+          <Text style={[styles.settingTitle, { color: theme.text }, destructive && styles.destructiveText]}>{title}</Text>
+          {subtitle && <Text style={[styles.settingSubtitle, { color: theme.textSecondary }]}>{subtitle}</Text>}
         </View>
       </View>
       {showSwitch ? (
         <Switch
           value={switchValue}
           onValueChange={onSwitchChange}
-          trackColor={{ false: '#E9ECEF', true: '#4A90E2' }}
+          trackColor={{ false: theme.border, true: theme.primary }}
           thumbColor={switchValue ? '#FFFFFF' : '#FFFFFF'}
         />
       ) : showArrow ? (
-        <Icon name="chevron-forward" size={20} color="#C7C7CC" />
+        <Icon name="chevron-forward" size={20} color={theme.textMuted} />
       ) : null}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
+        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Settings</Text>
         </View>
         {/* User Profile Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile</Text>
-          <View style={styles.profileCard}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Profile</Text>
+          <View style={[styles.profileCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.name}</Text>
-              <Text style={styles.profileEmail}>{user?.email}</Text>
+              <Text style={[styles.profileName, { color: theme.text }]}>{user?.name}</Text>
+              <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>{user?.email}</Text>
               <View style={styles.roleContainer}>
-                <Text style={[styles.roleText, user?.role === 'admin' && styles.adminRoleText]}>
+                <Text style={[styles.roleText, { color: theme.textSecondary }, user?.role === 'admin' && styles.adminRoleText]}>
                   {user?.role === 'admin' ? '👑 Admin' : '👤 User'}
                 </Text>
               </View>
             </View>
             <View style={styles.profileActions}>
               <TouchableOpacity 
-                style={[styles.refreshButton, isRefreshing && styles.refreshButtonDisabled]} 
+                style={[styles.refreshButton, { backgroundColor: theme.primaryLight }, isRefreshing && styles.refreshButtonDisabled]} 
                 onPress={handleRefreshUser}
                 disabled={isRefreshing}
               >
                 <Icon 
                   name={isRefreshing ? "refresh" : "refresh-outline"} 
                   size={16} 
-                  color={isRefreshing ? "#ADB5BD" : "#4A90E2"} 
+                  color={isRefreshing ? theme.textMuted : theme.primary} 
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-                <Icon name="pencil" size={16} color="#4A90E2" />
+              <TouchableOpacity style={[styles.editButton, { backgroundColor: theme.primaryLight }]} onPress={handleEditProfile}>
+                <Icon name="pencil" size={16} color={theme.primary} />
               </TouchableOpacity>
             </View>
           </View>
         </View>
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.settingsCard}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Preferences</Text>
+          <View style={[styles.settingsCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <SettingItem
-              icon="moon-outline"
+              icon={isDarkMode ? "sunny-outline" : "moon-outline"}
               title="Dark Mode"
-              subtitle="Switch to dark theme"
+              subtitle={isDarkMode ? "Switch to light theme" : "Switch to dark theme"}
               showSwitch={true}
-              switchValue={darkModeEnabled}
-              onSwitchChange={setDarkModeEnabled}
+              switchValue={isDarkMode}
+              onSwitchChange={toggleTheme}
             />
           </View>
         </View>
         {/* Account Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.settingsCard}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Account</Text>
+          <View style={[styles.settingsCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <SettingItem
               icon="lock-closed-outline"
               title="Change Password"
@@ -280,8 +281,8 @@ export default function SettingsScreen({ navigation }) {
         </View>
         {/* App Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App</Text>
-          <View style={styles.settingsCard}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>App</Text>
+          <View style={[styles.settingsCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <SettingItem
               icon="information-circle-outline"
               title="About"
@@ -301,8 +302,8 @@ export default function SettingsScreen({ navigation }) {
         </View>
         {/* Danger Zone */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Danger Zone</Text>
-          <View style={styles.settingsCard}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Danger Zone</Text>
+          <View style={[styles.settingsCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <SettingItem
               icon="log-out-outline"
               title="Logout"
@@ -314,8 +315,8 @@ export default function SettingsScreen({ navigation }) {
         </View>
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Text style={styles.appVersion}>Version 1.0.0</Text>
-          <Text style={styles.appCopyright}>© 2025 BCI E-LIBRARY. All rights reserved.</Text>
+          <Text style={[styles.appVersion, { color: theme.textSecondary }]}>Version 1.0.0</Text>
+          <Text style={[styles.appCopyright, { color: theme.textSecondary }]}>© 2025 BCI E-LIBRARY. All rights reserved.</Text>
         </View>
       </ScrollView>
       {/* Change Password Modal */}
@@ -325,13 +326,13 @@ export default function SettingsScreen({ navigation }) {
         transparent={true}
         onRequestClose={handleCancelPasswordChange}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.modal }]}>
             {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Change Password</Text>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Change Password</Text>
               <TouchableOpacity onPress={handleCancelPasswordChange} style={styles.modalCloseButton}>
-                <Icon name="close" size={24} color="#6C757D" />
+                <Icon name="close" size={24} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
             {/* Modal Body */}
