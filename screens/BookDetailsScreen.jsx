@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState, useEffect } from 'react';
+import React, { useContext, useMemo, useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Linking, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -49,9 +49,14 @@ export default function BookDetailsScreen({ navigation, route }) {
   const [categories, setCategories] = useState([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   
   // Image refresh state
   const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
+  
+  // Modal scroll ref
+  const modalScrollRef = useRef(null);
+  const categoriesSectionRef = useRef(null);
 
   const info = [
     { label: 'Name', value: title },
@@ -172,6 +177,34 @@ export default function BookDetailsScreen({ navigation, route }) {
     });
   };
 
+  const handleShowMoreCategories = () => {
+    setShowAllCategories(!showAllCategories);
+    
+    // Auto-scroll to show the newly revealed categories
+    setTimeout(() => {
+      if (modalScrollRef.current && categoriesSectionRef.current) {
+        categoriesSectionRef.current.measureLayout(
+          modalScrollRef.current,
+          (x, y) => {
+            // Calculate the height of the categories container to scroll appropriately
+            const scrollOffset = showAllCategories ? y - 100 : y - 50;
+            modalScrollRef.current.scrollTo({
+              y: scrollOffset, // Scroll to categories section with appropriate offset
+              animated: true
+            });
+          },
+          () => {
+            // Fallback if measureLayout fails
+            modalScrollRef.current.scrollTo({
+              y: showAllCategories ? 200 : 250,
+              animated: true
+            });
+          }
+        );
+      }
+    }, 200); // Longer delay to ensure state update and layout complete
+  };
+
   const openEditModal = async () => {
     // Reset form values to current book data
     setTitle(book.title || '');
@@ -183,12 +216,18 @@ export default function BookDetailsScreen({ navigation, route }) {
     setPublisher(book.publisher || '');
     setCountry(book.country || '');
     
+    // Reset category display state
+    setShowAllCategories(false);
+    
     // Load categories first
     try {
       setCategoryLoading(true);
       const docs = await listCategories();
       const loadedCategories = Array.isArray(docs) ? docs : [];
       setCategories(loadedCategories);
+      
+      console.log('Loaded categories:', loadedCategories.length, 'categories');
+      console.log('Categories:', loadedCategories.map(c => c.CategorieName));
       
       // Parse current categories and select them
       const currentCategories = (book.category || '').split(',').map(c => c.trim()).filter(c => c);
@@ -365,17 +404,18 @@ export default function BookDetailsScreen({ navigation, route }) {
     }
   };
 
+  // Debug logging
+  console.log('Render - Categories length:', categories.length, 'Show more button should show:', categories.length > 5, 'Show all categories:', showAllCategories);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={22} color={theme.text} />
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+          <Icon name="arrow-back" size={24} color={theme.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}> Book Details</Text>
-        <TouchableOpacity style={styles.headerBtn}>
-          <Icon name="share-outline" size={20} color={theme.text} />
-        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Book Details</Text>
+        <View style={styles.headerBtn} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -389,9 +429,10 @@ export default function BookDetailsScreen({ navigation, route }) {
           />
         </View>
 
-        <View style={styles.body}>
+        {/* Body */}
+        <ScrollView style={[styles.body, { backgroundColor: theme.background }]}>
           <Text style={[styles.title, { color: theme.text }]}>{book.title}</Text>
-          <Text style={[styles.desc, { color: theme.textSecondary }]}>{book.description || ''}</Text>
+          <Text style={[styles.desc, { color: theme.textSecondary }]}>{book.description}</Text>
 
           <View style={styles.actionsRow}>
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={openPdf}>
@@ -453,7 +494,7 @@ export default function BookDetailsScreen({ navigation, route }) {
               </View>
             ))}
           </View>
-        </View>
+        </ScrollView>
       </ScrollView>
 
       {/* Edit Book Info Modal */}
@@ -472,92 +513,168 @@ export default function BookDetailsScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true} ref={modalScrollRef}>
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Title *</Text>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Title *</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input, 
+                      { 
+                        color: theme.text, 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        fontSize: 16,
+                        minHeight: 48,
+                        textAlignVertical: 'center'
+                      }
+                    ]}
                     placeholder="Enter book title"
-                    placeholderTextColor="#6C757D"
+                    placeholderTextColor={theme.textMuted}
                     value={title}
                     onChangeText={setTitle}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Author</Text>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Author</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input, 
+                      { 
+                        color: theme.text, 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        fontSize: 16,
+                        minHeight: 48,
+                        textAlignVertical: 'center'
+                      }
+                    ]}
                     placeholder="Enter author name"
-                    placeholderTextColor="#6C757D"
+                    placeholderTextColor={theme.textMuted}
                     value={author}
                     onChangeText={setAuthor}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Categories</Text>
-                  <View style={styles.categoryContainer}>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Categories</Text>
+                  <View style={[
+                    styles.categoryContainer, 
+                    { backgroundColor: theme.surface, borderColor: theme.border },
+                    showAllCategories && { borderColor: theme.primary, borderWidth: 2 }
+                  ]} ref={categoriesSectionRef}>
                     {categoryLoading ? (
-                      <Text style={styles.loadingText}>Loading categories...</Text>
+                      <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading categories...</Text>
                     ) : categories.length === 0 ? (
-                      <Text style={styles.noCategoriesText}>No categories available</Text>
+                      <Text style={[styles.noCategoriesText, { color: theme.textSecondary }]}>No categories available</Text>
                     ) : (
-                      <View style={styles.categoryCheckboxContainer}>
-                        {categories.map((cat) => {
-                          const isSelected = selectedCategoryIds.includes(cat.$id);
-                          return (
-                            <TouchableOpacity
-                              key={cat.$id}
-                              onPress={() => toggleCategorySelect(cat.$id)}
-                              activeOpacity={0.7}
-                              style={styles.categoryCheckboxRow}
-                            >
-                              <View style={styles.checkboxContainer}>
-                                <Icon 
-                                  name={isSelected ? 'checkbox-outline' : 'square-outline'} 
-                                  size={20} 
-                                  color={isSelected ? '#4A90E2' : '#6C757D'} 
-                                />
-                              </View>
-                              <Text style={[
-                                styles.categoryCheckboxText,
-                                isSelected && styles.categoryCheckboxTextSelected
-                              ]}>
-                                {cat.CategorieName}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                      <>
+                        <View style={[
+                          styles.categoryCheckboxContainer,
+                          showAllCategories && { maxHeight: 'none' }
+                        ]}>
+                          {(showAllCategories ? categories : categories.slice(0, 5)).map((cat) => {
+                            const isSelected = selectedCategoryIds.includes(cat.$id);
+                            return (
+                              <TouchableOpacity
+                                key={cat.$id}
+                                onPress={() => toggleCategorySelect(cat.$id)}
+                                activeOpacity={0.7}
+                                style={[styles.categoryCheckboxRow, { borderBottomColor: theme.border }]}
+                              >
+                                <View style={styles.checkboxContainer}>
+                                  <Icon 
+                                    name={isSelected ? 'checkbox-outline' : 'square-outline'} 
+                                    size={20} 
+                                    color={isSelected ? theme.primary : theme.textSecondary} 
+                                  />
+                                </View>
+                                <Text style={[
+                                  styles.categoryCheckboxText,
+                                  { color: isSelected ? theme.primary : theme.text },
+                                  isSelected && styles.categoryCheckboxTextSelected
+                                ]}>
+                                  {cat.CategorieName}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                        
+                        {/* Show More Button */}
+                        {categories.length > 5 && (
+                          <TouchableOpacity
+                            onPress={handleShowMoreCategories}
+                            style={[
+                              styles.showMoreButton, 
+                              { 
+                                borderTopColor: theme.border,
+                                backgroundColor: theme.primary,
+                                marginTop: 8
+                              }
+                            ]}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.showMoreText, { color: '#FFFFFF' }]}>
+                              {showAllCategories ? 'Show Less' : `Show ${categories.length - 5} More Categories`}
+                            </Text>
+                            <Icon 
+                              name={showAllCategories ? 'chevron-up' : 'chevron-down'} 
+                              size={16} 
+                              color="#FFFFFF" 
+                            />
+                           
+                          </TouchableOpacity>
+                        )}
+                      </>
                     )}
                     {selectedCategoryIds.length > 0 && (
-                      <View style={styles.selectedCategoriesContainer}>
-                        <Text style={styles.selectedCategoriesLabel}>Selected:</Text>
-                        <Text style={styles.selectedCategoriesText}>{category}</Text>
+                      <View style={[styles.selectedCategoriesContainer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+                        <Text style={[styles.selectedCategoriesLabel, { color: theme.textSecondary }]}>Selected:</Text>
+                        <Text style={[styles.selectedCategoriesText, { color: theme.primary }]}>{category}</Text>
                       </View>
                     )}
                   </View>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Edition</Text>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Edition</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input, 
+                      { 
+                        color: theme.text, 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        fontSize: 16,
+                        minHeight: 48,
+                        textAlignVertical: 'center'
+                      }
+                    ]}
                     placeholder="Enter edition"
-                    placeholderTextColor="#6C757D"
+                    placeholderTextColor={theme.textMuted}
                     value={edition}
                     onChangeText={setEdition}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Pages</Text>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Pages</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input, 
+                      { 
+                        color: theme.text, 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        fontSize: 16,
+                        minHeight: 48,
+                        textAlignVertical: 'center'
+                      }
+                    ]}
                     placeholder="Enter number of pages"
-                    placeholderTextColor="#6C757D"
+                    placeholderTextColor={theme.textMuted}
                     value={pages}
                     onChangeText={setPages}
                     keyboardType="number-pad"
@@ -565,33 +682,63 @@ export default function BookDetailsScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Language</Text>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Language</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input, 
+                      { 
+                        color: theme.text, 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        fontSize: 16,
+                        minHeight: 48,
+                        textAlignVertical: 'center'
+                      }
+                    ]}
                     placeholder="Enter language"
-                    placeholderTextColor="#6C757D"
+                    placeholderTextColor={theme.textMuted}
                     value={language}
                     onChangeText={setLanguage}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Publisher</Text>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Publisher</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input, 
+                      { 
+                        color: theme.text, 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        fontSize: 16,
+                        minHeight: 48,
+                        textAlignVertical: 'center'
+                      }
+                    ]}
                     placeholder="Enter publisher"
-                    placeholderTextColor="#6C757D"
+                    placeholderTextColor={theme.textMuted}
                     value={publisher}
                     onChangeText={setPublisher}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Country</Text>
+                  <Text style={[styles.inputLabel, { color: theme.text }]}>Country</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input, 
+                      { 
+                        color: theme.text, 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        fontSize: 16,
+                        minHeight: 48,
+                        textAlignVertical: 'center'
+                      }
+                    ]}
                     placeholder="Enter country"
-                    placeholderTextColor="#6C757D"
+                    placeholderTextColor={theme.textMuted}
                     value={country}
                     onChangeText={setCountry}
                   />
@@ -599,14 +746,14 @@ export default function BookDetailsScreen({ navigation, route }) {
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.cancelBtn]}
+                style={[styles.modalBtn, styles.cancelBtn, { backgroundColor: theme.surface }]}
                 onPress={closeEditModal}
                 disabled={updating}
                 activeOpacity={0.8}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtn, styles.saveBtn]}
@@ -628,7 +775,7 @@ export default function BookDetailsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -636,20 +783,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
   },
   headerBtn: { padding: 6 },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#212529' },
+  headerTitle: { fontSize: 16, fontWeight: '700' },
 
   hero: { height: 220, backgroundColor: '#F8F9FA' },
   heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
 
   body: { paddingHorizontal: 16, paddingVertical: 16 },
-  title: { fontSize: 22, fontWeight: '800', color: '#212529', marginBottom: 12 },
+  title: { fontSize: 22, fontWeight: '800', marginBottom: 12 },
   desc: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#495057',
     marginBottom: 12,
   },
   actionsRow: { flexDirection: 'row', justifyContent: 'center',   alignItems: 'center',   marginBottom: 16,},
@@ -707,15 +852,14 @@ const styles = StyleSheet.create({
 
   form: { gap: 12 },
   inputGroup: { marginBottom: 4 },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: '#212529', marginBottom: 6 },
+  inputLabel: { fontSize: 14, fontWeight: '600', marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
+    fontSize: 16,
+    minHeight: 48,
   },
 
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#212529', marginTop: 8, marginBottom: 10 },
@@ -737,15 +881,13 @@ const styles = StyleSheet.create({
   // Modal styles
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
     width: '100%',
-    maxHeight: '90%',
-    backgroundColor: '#FFFFFF',
+    height: '90%',
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -755,12 +897,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#212529' },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
   modalCloseBtn: { padding: 4 },
   modalBody: {
-    maxHeight: 400,
+    maxHeight: '80%',
     padding: 20,
   },
   modalFooter: {
@@ -768,7 +909,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F1F3F5',
   },
   modalBtn: {
     flex: 1,
@@ -779,17 +919,15 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
   },
-  cancelBtn: { backgroundColor: '#E9ECEF' },
-  cancelBtnText: { color: '#495057', fontWeight: '600' },
+  cancelBtn: { },
+  cancelBtnText: { fontWeight: '600' },
   saveBtn: { backgroundColor: '#4A90E2' },
   saveBtnText: { color: '#FFFFFF', fontWeight: '600' },
 
   // Category checkbox styles
   categoryContainer: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 8,
-    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   categoryCheckboxContainer: {
@@ -801,7 +939,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
   },
   checkboxContainer: {
     marginRight: 12,
@@ -809,19 +946,15 @@ const styles = StyleSheet.create({
   categoryCheckboxText: {
     flex: 1,
     fontSize: 14,
-    color: '#495057',
     fontWeight: '500',
   },
   categoryCheckboxTextSelected: {
-    color: '#4A90E2',
     fontWeight: '600',
   },
   selectedCategoriesContainer: {
-    backgroundColor: '#F8F9FA',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
   },
   
   // Favorite button styles
@@ -835,26 +968,59 @@ const styles = StyleSheet.create({
   selectedCategoriesLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6C757D',
     marginBottom: 2,
   },
   selectedCategoriesText: {
     fontSize: 13,
-    color: '#4A90E2',
     fontWeight: '500',
   },
   loadingText: {
     textAlign: 'center',
     padding: 16,
-    color: '#6C757D',
     fontSize: 14,
   },
   noCategoriesText: {
     textAlign: 'center',
     padding: 16,
-    color: '#6C757D',
     fontSize: 14,
     fontStyle: 'italic',
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderRadius: 12,
+    marginHorizontal: 12,
+    marginVertical: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  showMoreText: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  newIndicator: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#FFD700',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+  newIndicatorText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 
