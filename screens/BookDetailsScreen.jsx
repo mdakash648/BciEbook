@@ -8,6 +8,7 @@ import { deleteBook, updateBookWithFiles } from '../services/bookService';
 import { listCategories } from '../services/categoryService';
 import { addToFavorites, removeFromFavorites, isBookFavorited } from '../services/favoritesService';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import { pick } from '@react-native-documents/picker';
 
 export default function BookDetailsScreen({ navigation, route }) {
   const book = route?.params?.book || {
@@ -313,6 +314,11 @@ export default function BookDetailsScreen({ navigation, route }) {
     ]);
   };
 
+  /**
+   * Pick a new file (cover image or PDF) using the appropriate picker
+   * @param {string} type - 'cover' for image picker, 'pdf' for document picker
+   * @returns {Object|null} File object with uri, name, type, and size properties
+   */
   const pickNewFile = async (type) => {
     if (type === 'cover') {
       try {
@@ -333,9 +339,51 @@ export default function BookDetailsScreen({ navigation, route }) {
       } catch (e) {
         Alert.alert('Cover', 'Could not choose image');
       }
-    } else {
-      // For PDF, we'll use a simple alert for now since we removed document picker
-      Alert.alert('PDF Upload', 'PDF upload functionality is temporarily disabled. Please use the web interface for PDF uploads.');
+    } else if (type === 'pdf') {
+      try {
+        console.log('Opening PDF picker...');
+        
+        const result = await pick({
+          type: ['application/pdf'], // Only allow PDF files
+          allowMultiSelection: false,
+        });
+
+        console.log('Picked file: ', result);
+
+        if (result && result.length > 0) {
+          const file = result[0];
+          console.log('Selected PDF file:', file);
+
+          // Validate file size (optional - you can adjust the limit)
+          const maxSize = 50 * 1024 * 1024; // 50MB limit
+          if (file.size && file.size > maxSize) {
+            Alert.alert(
+              'File Too Large',
+              'The selected PDF file is too large. Please choose a file smaller than 50MB.',
+            );
+            return null;
+          }
+
+          return {
+            uri: file.uri,
+            name: file.name || `book-${Date.now()}.pdf`,
+            type: 'application/pdf',
+            size: file.size || 0,
+          };
+        } else {
+          console.log('No PDF file selected');
+        }
+      } catch (err) {
+        if (err.code === 'DOCUMENTS_PICKER_CANCELED') {
+          console.log('User canceled PDF selection');
+        } else {
+          console.error('PDF Picker error: ', err);
+          Alert.alert(
+            'PDF Selection Error',
+            'Could not open document picker. Please try again.',
+          );
+        }
+      }
     }
     return null;
   };
@@ -343,8 +391,10 @@ export default function BookDetailsScreen({ navigation, route }) {
   const replaceFile = async (kind) => {
     const file = await pickNewFile(kind === 'cover' ? 'cover' : 'pdf');
     if (!file) return;
+    
     try {
       setUpdating(true);
+      
       // Provide all current book data to avoid missing required fields
       const data = {
         title: book.title || '',
@@ -396,9 +446,16 @@ export default function BookDetailsScreen({ navigation, route }) {
         }
       }
       
-      Alert.alert('Updated', `${kind === 'cover' ? 'Cover' : 'PDF'} replaced successfully`);
+      Alert.alert(
+        'Success', 
+        `${kind === 'cover' ? 'Cover image' : 'PDF file'} has been replaced successfully!`
+      );
     } catch (e) {
-      Alert.alert('Error', e?.message || 'Update failed');
+      console.error('File replacement error:', e);
+      Alert.alert(
+        'Upload Failed', 
+        `Failed to replace ${kind === 'cover' ? 'cover image' : 'PDF file'}. ${e?.message || 'Please try again.'}`
+      );
     } finally {
       setUpdating(false);
     }
