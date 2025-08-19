@@ -372,7 +372,7 @@ export default function BookDetailsScreen({ navigation, route }) {
         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
           <Icon name="chevron-back" size={22} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-LIBRARY Book Details</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}> Book Details</Text>
         <TouchableOpacity style={styles.headerBtn}>
           <Icon name="share-outline" size={20} color={theme.text} />
         </TouchableOpacity>

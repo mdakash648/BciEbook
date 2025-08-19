@@ -99,7 +99,7 @@ export default function FavoritesScreen({ navigation }) {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.center}>
           <Icon name="heart-outline" size={64} color={theme.textSecondary} />
-          <Text style={[styles.title, { color: theme.text }]}>BCI E-LIBRARY Favorites</Text>
+          <Text style={[styles.title, { color: theme.text }]}> Favorites</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Please login to view your favorite books</Text>
           <TouchableOpacity 
             style={[styles.loginBtn, { backgroundColor: theme.primary }]} 
@@ -118,7 +118,7 @@ export default function FavoritesScreen({ navigation }) {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.center}>
           <Icon name="heart-outline" size={64} color={theme.textSecondary} />
-          <Text style={[styles.title, { color: theme.text }]}>BCI E-LIBRARY Favorites</Text>
+          <Text style={[styles.title, { color: theme.text }]}> Favorites</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Loading your favorite books...</Text>
         </View>
       </SafeAreaView>
@@ -128,7 +128,7 @@ export default function FavoritesScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-LIBRARY Favorites</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}> Favorites</Text>
         <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
           {favorites.length} {favorites.length === 1 ? 'book' : 'books'} in your collection
         </Text>

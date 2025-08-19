@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { listBooks } from '../services/bookService';
-import AdvancedSearchFilter from '../components/AdvancedSearchFilter';
+import FilterModal from '../components/FilterModal';
 
 const MOCK_BOOKS = [];
 
@@ -27,20 +27,19 @@ export default function HomeScreen({ navigation }) {
   };
 
   const applySearchFilters = () => {
-    // This will trigger the useMemo filter to re-run
     console.log('Applying search filters:', searchCriteria);
-    // Load books with search criteria
-    loadInitialBooks();
+    console.log('Search criteria keys:', Object.keys(searchCriteria));
+    console.log('Search criteria values:', Object.values(searchCriteria));
+    loadInitialBooks(searchCriteria);
   };
 
   const clearSearchFilters = () => {
     setSearchCriteria({});
     setQuery('');
-    // Reset to initial books
-    loadInitialBooks();
+    loadInitialBooks(null);
   };
 
-  const loadInitialBooks = async () => {
+  const loadInitialBooks = async (searchCriteria = null) => {
     try {
       setLoading(true);
       setBooks([]);
@@ -49,31 +48,16 @@ export default function HomeScreen({ navigation }) {
       
       let result;
       try {
-        // If we have search criteria, use server-side search
-        if (Object.keys(searchCriteria).length > 0) {
-          try {
-            result = await listBooks(null, 0, searchCriteria);
-          } catch (error) {
-            console.log('Server-side search failed, falling back to client-side filtering:', error);
-            // Fallback to loading all books and filtering client-side
-            result = await listBooks();
-            // Client-side filtering will be handled in the useMemo hook
-          }
-        } else {
-          result = await listBooks(6, 0); // Load initial 6 books
-        }
-        console.log('Initial books loaded:', result);
-      } catch (paginationError) {
-        console.log('Pagination failed, trying without limit:', paginationError);
-        // Fallback to old method if pagination fails
-        result = await listBooks();
-        console.log('Fallback books loaded:', result);
+        result = await listBooks(null, 0, searchCriteria || null);
+        console.log('Books loaded with criteria:', searchCriteria, result);
+      } catch (error) {
+        console.log('Failed to load books:', error);
+        result = { documents: [], total: 0 };
       }
       
       const refreshKey = Date.now();
       setImageRefreshKey(refreshKey);
       
-      // Handle both new format (with documents/total) and old format (array)
       const documents = Array.isArray(result) ? result : (result.documents || []);
       const total = Array.isArray(result) ? result.length : (result.total || 0);
       
@@ -97,15 +81,8 @@ export default function HomeScreen({ navigation }) {
       setBooks(formattedBooks);
       setTotalBooks(total);
       
-      if (Array.isArray(result)) {
-        // Old format - disable pagination
-        setCurrentOffset(formattedBooks.length);
-        setHasMore(false);
-      } else {
-        // New format - enable pagination
-        setCurrentOffset(6);
-        setHasMore(documents.length === 6 && total > 6);
-      }
+      setCurrentOffset(formattedBooks.length);
+      setHasMore(false);
       
     } catch (error) {
       console.log('Error loading books:', error);
@@ -117,93 +94,24 @@ export default function HomeScreen({ navigation }) {
   };
 
   const loadMoreBooks = async () => {
-    // Don't load more books when using search filters
-    if (Object.keys(searchCriteria).length > 0) return;
-    
-    if (loadingMore || !hasMore) return;
-    
-    console.log(`🔄 AJAX Loading: Fetching next 4 books (offset: ${currentOffset})`);
-    
-    try {
-      setLoadingMore(true);
-      const result = await listBooks(4, currentOffset); // Load next 4 books
-      const refreshKey = imageRefreshKey;
-      
-      const formattedBooks = result.documents.map((d) => ({
-        id: d.$id,
-        title: d.title,
-        author: d.author,
-        cover: d.coverFileId ? `${d.coverFileId}${d.coverFileId.includes('?') ? '&' : '?'}refresh=${refreshKey}` : d.coverFileId,
-        category: d.category,
-        edition: d.edition,
-        pages: d.pages,
-        language: d.language,
-        publisher: d.publisher,
-        country: d.country,
-        pdfUrl: d.pdfFileId,
-        raw: d,
-      }));
-      
-      setBooks(prevBooks => {
-        const newBooks = [...prevBooks, ...formattedBooks];
-        console.log(`✅ AJAX Success: Added ${formattedBooks.length} books. Total: ${newBooks.length}`);
-        return newBooks;
-      });
-      setCurrentOffset(prev => prev + 4);
-      setHasMore(result.documents.length === 4 && currentOffset + 4 < result.total);
-      
-    } catch (error) {
-      console.log('Error loading more books:', error);
-    } finally {
-      setLoadingMore(false);
-    }
+    return;
   };
 
   useFocusEffect(
     React.useCallback(() => {
-      loadInitialBooks();
-    }, [])
+      loadInitialBooks(searchCriteria);
+    }, [searchCriteria])
   );
 
   const filtered = useMemo(() => {
     const src = books.length ? books : MOCK_BOOKS;
     
-    // If we have search criteria and server-side search failed, do client-side filtering
-    if (Object.keys(searchCriteria).length > 0) {
-      return src.filter((book) => {
-        // Check each search criterion
-        for (const [key, value] of Object.entries(searchCriteria)) {
-          if (!value) continue; // Skip empty criteria
-          
-          // Special handling for pages (numeric comparison)
-          if (key === 'pages') {
-            const pagesValue = parseInt(value, 10);
-            if (!isNaN(pagesValue) && book.pages !== pagesValue) {
-              return false;
-            }
-            continue;
-          }
-          
-          // For text fields, check if the book's field contains the search value
-          if (book[key] && book[key].toString().toLowerCase().includes(value.toLowerCase())) {
-            continue;
-          }
-          
-          // If we get here, this criterion didn't match
-          return false;
-        }
-        // If we get here, all criteria matched
-        return true;
-      });
-    }
-    
-    // Simple query search if no advanced criteria
     if (!query.trim()) return src;
     const q = query.toLowerCase();
     return src.filter(
       (b) => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)
     );
-  }, [query, searchCriteria, books]);
+  }, [query, books]);
 
   const renderBook = ({ item }) => (
     <TouchableOpacity
@@ -215,7 +123,7 @@ export default function HomeScreen({ navigation }) {
         <Image 
           source={{ uri: item.cover }} 
           style={styles.cover}
-          key={`${item.id}-${imageRefreshKey}`} // Force re-render with refresh key
+          key={`${item.id}-${imageRefreshKey}`}
         />
       </View>
       <Text numberOfLines={2} style={[styles.bookTitle, { color: theme.text }]}>{item.title}</Text>
@@ -224,26 +132,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderFooter = () => {
-    if (!query.trim() && Object.keys(searchCriteria).length === 0 && hasMore && !loading) {
-      return (
-        <View style={styles.loadingFooter}>
-          {loadingMore ? (
-            <>
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading next 4 books...</Text>
-              <View style={styles.loadingDots}>
-                <Text style={[styles.loadingDot, { color: theme.primary }]}>•</Text>
-                <Text style={[styles.loadingDot, { color: theme.primary }]}>•</Text>
-                <Text style={[styles.loadingDot, { color: theme.primary }]}>•</Text>
-              </View>
-            </>
-          ) : (
-            <Text style={[styles.scrollHint, { color: theme.textSecondary }]}>Scroll down to load more books</Text>
-          )}
-        </View>
-      );
-    }
-    
-    if (!query.trim() && Object.keys(searchCriteria).length === 0 && !hasMore && books.length > 0) {
+    if (books.length > 0 && !loading) {
       return (
         <View style={styles.loadingFooter}>
           <Text style={[styles.endText, { color: theme.textSecondary }]}>✨ All books loaded!</Text>
@@ -255,10 +144,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleEndReached = () => {
-    // Only load more if not searching (for search, we show all filtered results)
-    if (!query.trim() && Object.keys(searchCriteria).length === 0 && hasMore && !loadingMore && !loading) {
-      loadMoreBooks();
-    }
+    return;
   };
 
   return (
@@ -268,6 +154,7 @@ export default function HomeScreen({ navigation }) {
         <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-LIBRARY</Text>
       </View>
 
+      {/* Filter Button */}
       <View style={styles.toolbar}>
         <TouchableOpacity
           style={[styles.filterChip, { backgroundColor: theme.secondary }]}
@@ -277,6 +164,18 @@ export default function HomeScreen({ navigation }) {
           <Text style={[styles.filterText, { color: theme.text }]}>Filter</Text>
           <Icon name={filterOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.text} />
         </TouchableOpacity>
+        
+        {/* Clear Button - Only show when filters are applied */}
+        {(Object.keys(searchCriteria).length > 0) && (
+          <TouchableOpacity
+            style={[styles.clearChip, { backgroundColor: theme.error + '15' }]}
+            activeOpacity={0.8}
+            onPress={clearSearchFilters}
+          >
+            <Icon name="close-circle" size={16} color={theme.error} />
+            <Text style={[styles.clearText, { color: theme.error }]}>Clear</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Search */}
@@ -292,13 +191,20 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
 
-      {/* Advanced Search Filter */}
-      <AdvancedSearchFilter
+      {/* Filter Modal */}
+      <FilterModal
         isVisible={filterOpen}
         searchCriteria={searchCriteria}
         onCriteriaChange={handleSearchCriteriaChange}
-        onApply={applySearchFilters}
-        onClear={clearSearchFilters}
+        onApply={() => {
+          applySearchFilters();
+          setFilterOpen(false);
+        }}
+        onClear={() => {
+          clearSearchFilters();
+          setFilterOpen(false);
+        }}
+        onClose={() => setFilterOpen(false)}
       />
 
       {/* Book Count Section */}
@@ -311,7 +217,7 @@ export default function HomeScreen({ navigation }) {
         </View>
         {(query.trim() || Object.keys(searchCriteria).length > 0) && (
           <Text style={styles.totalBooksText}>
-            Total: {totalBooks} book{totalBooks !== 1 ? 's' : ''}
+            Total: {totalBooks} book{totalBooks !== 1 ? 's' : ''} in library
           </Text>
         )}
       </View>
@@ -352,9 +258,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 8,
     marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   filterChip: {
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -365,6 +273,19 @@ const styles = StyleSheet.create({
   },
   filterText: {
     color: '#4A4A4A',
+    fontWeight: '600',
+  },
+  clearChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 16,
+  },
+  clearText: {
+    color: '#DC3545',
     fontWeight: '600',
   },
   searchBox: {
