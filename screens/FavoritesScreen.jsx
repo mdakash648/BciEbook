@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getUserFavorites, removeFromFavorites } from '../services/favoritesService';
@@ -39,6 +40,16 @@ export default function FavoritesScreen({ navigation }) {
   useEffect(() => {
     loadFavorites();
   }, [user]);
+
+  // Auto-refresh favorites when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        console.log('FavoritesScreen: Auto-refreshing favorites on focus');
+        loadFavorites();
+      }
+    }, [user])
+  );
 
   // Refresh favorites
   const onRefresh = async () => {
