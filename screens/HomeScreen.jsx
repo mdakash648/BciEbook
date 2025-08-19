@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { listBooks } from '../services/bookService';
 import FilterModal from '../components/FilterModal';
+import { CONFIG } from '../constants/Config';
 
 const MOCK_BOOKS = [];
 
@@ -21,6 +22,27 @@ export default function HomeScreen({ navigation }) {
   const [hasMore, setHasMore] = useState(true);
   const [totalBooks, setTotalBooks] = useState(0);
   const [currentOffset, setCurrentOffset] = useState(0);
+  const [logoUri, setLogoUri] = useState(null);
+  const [logoLoading, setLogoLoading] = useState(true);
+
+  // Auto-refresh logo URL with cache busting (same as AuthScreen)
+  const headerLogoUri = useMemo(() => {
+    const seed = globalThis.__APP_LOGO_CB__ || Date.now();
+    return `${CONFIG.APP_LOGO_FALLBACK_URL}${CONFIG.APP_LOGO_FALLBACK_URL.includes('?') ? '&' : '?'}cb=${seed}`;
+  }, []);
+
+  // Load app logo (simplified since we use auto-refresh)
+  const loadAppLogo = async () => {
+    try {
+      setLogoLoading(true);
+      // Logo URL is now handled by useMemo with cache busting
+      setLogoUri(headerLogoUri);
+    } catch (error) {
+      console.log('Failed to load app logo:', error);
+    } finally {
+      setLogoLoading(false);
+    }
+  };
 
   const handleSearchCriteriaChange = (criteria) => {
     setSearchCriteria(criteria);
@@ -100,8 +122,15 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     React.useCallback(() => {
       loadInitialBooks(searchCriteria);
+      // Refresh logo when screen comes into focus
+      loadAppLogo();
     }, [searchCriteria])
   );
+
+  // Load logo on component mount and when headerLogoUri changes
+  useEffect(() => {
+    loadAppLogo();
+  }, [headerLogoUri]);
 
   const filtered = useMemo(() => {
     const src = books.length ? books : MOCK_BOOKS;
@@ -150,9 +179,33 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Books</Text>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <View style={styles.headerContent}>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            {logoLoading ? (
+              <View style={[styles.logoPlaceholder, { backgroundColor: theme.surface }]}>
+                <Icon name="refresh-outline" size={20} color={theme.primary} />
+              </View>
+            ) : (
+              <Image
+                source={{ uri: headerLogoUri }}
+                style={styles.logoImage}
+                resizeMode="contain"
+                key={headerLogoUri} // Force re-render when URL changes
+              />
+            )}
+          </View>
+          
+                     {/* Title and Subtitle */}
+           <View style={styles.titleContainer}>
+             <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-Library</Text>
+             <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Discover amazing books</Text>
+           </View>
+        </View>
       </View>
+
+
 
       {/* Filter Button */}
       <View style={styles.toolbar}>
@@ -208,19 +261,16 @@ export default function HomeScreen({ navigation }) {
       />
 
       {/* Book Count Section */}
-      <View style={styles.bookCountSection}>
-        <View style={styles.bookCountContainer}>
-          <Icon name="library-outline" size={20} color={theme.primary} />
-          <Text style={[styles.bookCountText, { color: theme.text }]}>
-            {loading ? 'Loading...' : `${filtered.length} book${filtered.length !== 1 ? 's' : ''} ${query.trim() || Object.keys(searchCriteria).length > 0 ? 'found' : 'available'}`}
-          </Text>
+      {(query.trim() || Object.keys(searchCriteria).length > 0) && (
+        <View style={styles.bookCountSection}>
+          <View style={styles.bookCountContainer}>
+            <Icon name="search-outline" size={16} color={theme.primary} />
+            <Text style={[styles.bookCountText, { color: theme.text }]}>
+              {loading ? 'Loading...' : `${filtered.length} book${filtered.length !== 1 ? 's' : ''} found`}
+            </Text>
+          </View>
         </View>
-        {(query.trim() || Object.keys(searchCriteria).length > 0) && (
-          <Text style={[styles.totalBooksText, { color: theme.textSecondary }]}>
-            Total: {totalBooks} book{totalBooks !== 1 ? 's' : ''} in library
-          </Text>
-        )}
-      </View>
+      )}
 
       {/* Grid */}
       <FlatList
@@ -245,13 +295,48 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  logoContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  titleContainer: {
+    marginLeft: 10,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
+    marginBottom: 0,
   },
+  headerSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+  },
+
   toolbar: {
     paddingHorizontal: 20,
     marginTop: 8,
@@ -292,7 +377,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginHorizontal: 20,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 5,
     backgroundColor: '#F5F6FA',
     borderRadius: 12,
     borderWidth: 1,

@@ -588,6 +588,10 @@ export default function DashboardScreen({ navigation }) {
 
       // Refresh logo from storage
       await loadCurrentLogo();
+      
+      // Update global cache bust variable to trigger logo refresh in all screens
+      globalThis.__APP_LOGO_CB__ = Date.now();
+      
       Alert.alert('Success', `Logo uploaded. File ID: ${json?.$id || fileId}`);
     } catch (e) {
       const msg = e?.message || String(e);
