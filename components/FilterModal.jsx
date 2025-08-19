@@ -14,6 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../context/ThemeContext';
 import { getFilterOptions } from '../services/bookService';
+import { BlurView } from '@react-native-community/blur';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -25,7 +26,7 @@ const FilterModal = ({
   onClear,
   onClose
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const [filterOptions, setFilterOptions] = useState({
     categories: [],
     authors: [],
@@ -226,80 +227,92 @@ const FilterModal = ({
         />
         
         {/* Modal Content */}
-        <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
-          {/* Handle Bar */}
-          <View style={styles.handleBar}>
-            <View style={[styles.handle, { backgroundColor: theme.border }]} />
-          </View>
-          
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={[styles.title, { color: theme.text }]}>Filter Books</Text>
-              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                Refine your search
-              </Text>
-            </View>
-            <View style={styles.headerRight}>
-              {getTotalSelectedCount() > 0 && (
-                <TouchableOpacity onPress={clearAllFilters} style={styles.clearButton}>
-                  <Text style={[styles.clearText, { color: theme.error }]}>Clear All</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Icon name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          {/* Content */}
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={theme.primary} />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                Loading filter options...
-              </Text>
-            </View>
-          ) : (
-            <ScrollView 
-              style={styles.scrollView} 
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.scrollContent}
-            >
-              {renderFilterSection('Categories', 'categories', filterOptions.categories, 'grid-outline', '#6366F1')}
-              {renderFilterSection('Authors', 'authors', filterOptions.authors, 'person-outline', '#10B981')}
-              {renderFilterSection('Languages', 'languages', filterOptions.languages, 'language-outline', '#F59E0B')}
-              {renderFilterSection('Publishers', 'publishers', filterOptions.publishers, 'business-outline', '#EF4444')}
-              {renderFilterSection('Countries', 'countries', filterOptions.countries, 'flag-outline', '#8B5CF6')}
-            </ScrollView>
-          )}
-          
-          {/* Footer */}
-          <View style={styles.footer}>
-            <View style={styles.footerInfo}>
-              <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-                {getTotalSelectedCount()} filter{getTotalSelectedCount() !== 1 ? 's' : ''} selected
-              </Text>
-            </View>
-            <TouchableOpacity 
-              style={[
-                styles.applyButton, 
-                { 
-                  backgroundColor: getTotalSelectedCount() > 0 ? theme.primary : theme.border,
-                  opacity: getTotalSelectedCount() > 0 ? 1 : 0.6
-                }
-              ]} 
-              onPress={applyFilters}
-              activeOpacity={0.8}
-              disabled={getTotalSelectedCount() === 0}
-            >
-              <Icon name="search" size={18} color="#FFFFFF" style={styles.buttonIcon} />
-              <Text style={styles.applyButtonText}>
-                Apply {getTotalSelectedCount() > 0 ? `(${getTotalSelectedCount()})` : ''}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <BlurView
+          style={styles.blurContainer}
+          blurType={isDarkMode ? "dark" : "light"}
+          blurAmount={30}
+          reducedTransparencyFallbackColor={isDarkMode ? "#000000" : "#FFFFFF"}
+          fallbackColor={isDarkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.7)"}
+        >
+                               <View style={[styles.modalContainer, { 
+            backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)',
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+          }]}>
+             {/* Handle Bar */}
+             <View style={styles.handleBar}>
+               <View style={[styles.handle, { backgroundColor: theme.border }]} />
+             </View>
+             
+             {/* Header */}
+             <View style={styles.header}>
+               <View style={styles.headerLeft}>
+                 <Text style={[styles.title, { color: theme.text }]}>Filter Books</Text>
+                 <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                   Refine your search
+                 </Text>
+               </View>
+               <View style={styles.headerRight}>
+                                   {getTotalSelectedCount() > 0 && (
+                    <TouchableOpacity onPress={clearAllFilters} style={[styles.clearButton, { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' }]}>
+                      <Text style={[styles.clearText, { color: '#DC2626' }]}>Clear All</Text>
+                    </TouchableOpacity>
+                  )}
+                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                   <Icon name="close" size={24} color={theme.text} />
+                 </TouchableOpacity>
+               </View>
+             </View>
+             
+             {/* Content */}
+             {loading ? (
+               <View style={styles.loadingContainer}>
+                 <ActivityIndicator size="large" color={theme.primary} />
+                 <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                   Loading filter options...
+                 </Text>
+               </View>
+             ) : (
+               <ScrollView 
+                 style={styles.scrollView} 
+                 showsVerticalScrollIndicator={false}
+                 contentContainerStyle={styles.scrollContent}
+               >
+                 {renderFilterSection('Categories', 'categories', filterOptions.categories, 'grid-outline', '#6366F1')}
+                 {renderFilterSection('Authors', 'authors', filterOptions.authors, 'person-outline', '#10B981')}
+                 {renderFilterSection('Languages', 'languages', filterOptions.languages, 'language-outline', '#F59E0B')}
+                 {renderFilterSection('Publishers', 'publishers', filterOptions.publishers, 'business-outline', '#EF4444')}
+                 {renderFilterSection('Countries', 'countries', filterOptions.countries, 'flag-outline', '#8B5CF6')}
+               </ScrollView>
+             )}
+             
+             {/* Footer */}
+             <View style={styles.footer}>
+               <View style={styles.footerInfo}>
+                 <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+                   {getTotalSelectedCount()} filter{getTotalSelectedCount() !== 1 ? 's' : ''} selected
+                 </Text>
+               </View>
+               <TouchableOpacity 
+                 style={[
+                   styles.applyButton, 
+                   { 
+                     backgroundColor: getTotalSelectedCount() > 0 ? theme.primary : theme.border,
+                     opacity: getTotalSelectedCount() > 0 ? 1 : 0.6
+                   }
+                 ]} 
+                 onPress={applyFilters}
+                 activeOpacity={0.8}
+                 disabled={getTotalSelectedCount() === 0}
+               >
+                 <Icon name="search" size={18} color="#FFFFFF" style={styles.buttonIcon} />
+                 <Text style={styles.applyButtonText}>
+                   Apply {getTotalSelectedCount() > 0 ? `(${getTotalSelectedCount()})` : ''}
+                 </Text>
+               </TouchableOpacity>
+             </View>
+           </View>
+         </BlurView>
       </View>
     </Modal>
   );
@@ -308,16 +321,25 @@ const FilterModal = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'flex-end',
+  },
+  blurContainer: {
+    height: screenHeight * 0.75,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 20,
   },
   backdropTouch: {
     flex: 1,
   },
   modalContainer: {
-    height: screenHeight * 0.75, // 75% of screen height
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    height: '100%',
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
@@ -327,9 +349,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
+    width: 48,
+    height: 5,
+    borderRadius: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
@@ -357,6 +384,12 @@ const styles = StyleSheet.create({
   clearButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   clearText: {
     fontSize: 14,
@@ -383,13 +416,13 @@ const styles = StyleSheet.create({
   },
   filterSection: {
     marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     width: '98%',
     alignSelf: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
     elevation: 4,
   },
   sectionHeader: {
@@ -457,11 +490,16 @@ const styles = StyleSheet.create({
   optionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
     borderWidth: 1.5,
-    minHeight: 36,
+    minHeight: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   optionText: {
     fontSize: 14,
@@ -484,15 +522,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   applyButton: {
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 18,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 6,
   },
   buttonIcon: {
