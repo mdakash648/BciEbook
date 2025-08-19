@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import { getAccountInstance } from '../services/appwriteService';
 import { updateUserProfileInDatabase, getUserFromDatabase } from '../services/userService';
 import { account } from '../lib/appwrite';
@@ -47,6 +48,7 @@ const phoneLocalToE164 = (input) => {
 
 export default function EditProfileScreen({ navigation }) {
   const { user, checkUser } = useAuth();
+  const { theme } = useTheme();
   const [editName, setEditName] = useState(user?.name || '');
   const [editEmail, setEditEmail] = useState(user?.email || '');
   const [editPhone, setEditPhone] = useState(phoneE164ToLocal(user?.phone));
@@ -224,13 +226,13 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#4A90E2" />
+          <Icon name="arrow-back" size={24} color={theme.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Profile</Text>
         <TouchableOpacity 
           onPress={handleSaveProfile}
           disabled={isUpdatingProfile}
@@ -241,17 +243,17 @@ export default function EditProfileScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
       </View>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.scrollView, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
         {/* Form Section */}
-        <View style={styles.formSection}>
+        <View style={[styles.formSection, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Full Name</Text>
-            <View style={styles.inputWrapper}>
-              <Icon name="person-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Full Name</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Icon name="person-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.text }]}
                 placeholder="Enter your full name"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={theme.textMuted}
                 value={editName}
                 onChangeText={setEditName}
                 autoCapitalize="words"
@@ -261,13 +263,13 @@ export default function EditProfileScreen({ navigation }) {
             </View>
           </View>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email Address</Text>
-            <View style={styles.inputWrapper}>
-              <Icon name="mail-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Email Address</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Icon name="mail-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.text }]}
                 placeholder="Enter your email address"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={theme.textMuted}
                 value={editEmail}
                 onChangeText={setEditEmail}
                 keyboardType="email-address"
@@ -277,17 +279,17 @@ export default function EditProfileScreen({ navigation }) {
                 editable={false}
               />
             </View>
-            <Text style={styles.disabledText}>Email address cannot be changed</Text>
+            <Text style={[styles.disabledText, { color: theme.textMuted }]}>Email address cannot be changed</Text>
           </View>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
-            <Text style={styles.inputDescription}>Please enter Bangladesh phone number (11 digits, e.g., 01812345678)</Text>
-            <View style={styles.inputWrapper}>
-              <Icon name="call-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Phone Number</Text>
+            <Text style={[styles.inputDescription, { color: theme.textSecondary }]}>Please enter Bangladesh phone number (11 digits, e.g., 01812345678)</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Icon name="call-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.text }]}
                 placeholder="For example: 01812345678"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={theme.textMuted}
                 value={editPhone}
                 onChangeText={setEditPhone}
                 keyboardType="phone-pad"
@@ -298,14 +300,14 @@ export default function EditProfileScreen({ navigation }) {
             </View>
           </View>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Address</Text>
-            <Text style={styles.inputDescription}>Enter your full address</Text>
-            <View style={styles.inputWrapper}>
-              <Icon name="location-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Address</Text>
+            <Text style={[styles.inputDescription, { color: theme.textSecondary }]}>Enter your full address</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Icon name="location-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { color: theme.text }]}
                 placeholder="Enter your full address"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={theme.textMuted}
                 value={editAddress}
                 onChangeText={setEditAddress}
                 multiline={true}
@@ -318,14 +320,14 @@ export default function EditProfileScreen({ navigation }) {
           </View>
           {editPhone.trim() !== phoneE164ToLocal(user?.phone) && (
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <Text style={styles.inputDescription}>Enter your password to update phone number</Text>
-              <View style={styles.inputWrapper}>
-                <Icon name="lock-closed-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Password</Text>
+              <Text style={[styles.inputDescription, { color: theme.textSecondary }]}>Enter your password to update phone number</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Icon name="lock-closed-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: theme.text }]}
                   placeholder="Enter your password"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={theme.textMuted}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -339,7 +341,7 @@ export default function EditProfileScreen({ navigation }) {
                   <Icon 
                     name={showPassword ? "eye-off" : "eye"} 
                     size={20} 
-                    color="#6C757D" 
+                    color={theme.textSecondary} 
                   />
                 </TouchableOpacity>
               </View>
@@ -359,12 +361,12 @@ export default function EditProfileScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.actionButton, styles.cancelActionButton]} 
+            style={[styles.actionButton, styles.cancelActionButton, { backgroundColor: theme.surface, borderColor: theme.border }]} 
             onPress={handleCancel}
             disabled={isUpdatingProfile}
           >
-            <Icon name="close" size={20} color="#6C757D" />
-            <Text style={styles.cancelActionButtonText}>Cancel</Text>
+            <Icon name="close" size={20} color={theme.textSecondary} />
+            <Text style={[styles.cancelActionButtonText, { color: theme.textSecondary }]}>Cancel</Text>
           </TouchableOpacity>
         </View>
         
@@ -377,7 +379,6 @@ export default function EditProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   header: {
     flexDirection: 'row',
@@ -385,9 +386,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
   },
   backButton: {
     padding: 4,
@@ -395,7 +394,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#212529',
     flex: 1,
     textAlign: 'center',
   },
@@ -420,7 +418,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   formSection: {
-    backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,
@@ -441,24 +438,20 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
     marginBottom: 8,
   },
   inputDescription: {
     fontSize: 12,
-    color: '#6C757D',
     marginBottom: 8,
     fontStyle: 'italic',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
   },
   inputIcon: {
     marginRight: 12,
@@ -467,7 +460,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: 16,
-    color: '#212529',
   },
   textArea: {
     minHeight: 80,

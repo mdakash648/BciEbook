@@ -19,9 +19,12 @@ const BAR_RADIUS = BAR_HEIGHT / 2; // 50%
 const HORIZONTAL_PADDING = 32;
 
 export default function CustomTabBar({ state, descriptors, navigation }) {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { width } = Dimensions.get('window');
   const barWidth = width * 0.85;
+
+  // Debug theme state
+  console.log('CustomTabBar - isDarkMode:', isDarkMode, 'theme.background:', theme.background);
 
   const visibleRoutes = state.routes.filter(
     (route) => route.name === 'Home' || route.name === 'Favorites' || route.name === 'Settings'
@@ -39,24 +42,35 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
   const focusedVisibleIndex = Math.max(0, visibleRoutes.findIndex((r) => r.name === effectiveActiveName));
 
   useEffect(() => {
+    const targetPosition = HORIZONTAL_PADDING + focusedVisibleIndex * tabContentWidth + tabContentWidth / 2 - INDICATOR_SIZE / 2;
+    console.log('Indicator positioning:', {
+      focusedVisibleIndex,
+      tabContentWidth,
+      targetPosition,
+      tabName: effectiveActiveName
+    });
+    
     Animated.spring(indicatorAnim, {
-      toValue:
-        HORIZONTAL_PADDING +
-        focusedVisibleIndex * tabContentWidth +
-        tabContentWidth / 2 -
-        INDICATOR_SIZE / 2,
+      toValue: targetPosition,
       useNativeDriver: false,
       friction: 7,
       tension: 80,
     }).start();
-  }, [focusedVisibleIndex, tabContentWidth]);
+  }, [focusedVisibleIndex, tabContentWidth, HORIZONTAL_PADDING, INDICATOR_SIZE]);
 
   return (
     <View style={[styles.container, { borderRadius: BAR_RADIUS }]}> 
-      <View style={[styles.tabBarWrapper, { width: barWidth, borderRadius: BAR_RADIUS }]}>        
-        <View style={[styles.inner, { borderRadius: BAR_RADIUS }]}>        
-          <View style={[styles.blurBackground, { backgroundColor: theme.isDarkMode ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)' }]} />
-          <View pointerEvents="none" style={styles.blurOverlay} />
+      <View style={[styles.tabBarWrapper, { 
+        width: barWidth, 
+        borderRadius: BAR_RADIUS,
+        backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
+        borderWidth: isDarkMode ? 2 : 0,
+        borderColor: isDarkMode ? '#444444' : 'transparent'
+      }]}>        
+        <View style={[styles.inner, { 
+          borderRadius: BAR_RADIUS,
+          backgroundColor: isDarkMode ? '#000000' : '#FFFFFF'
+        }]}>        
           <Animated.View
             style={[
               styles.indicator,
@@ -90,8 +104,8 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
                   </View>
                 ) : (
                   <View style={styles.inactiveIconWrapper}>
-                    <Ionicons name={iconName} size={ICON_SIZE} color={theme.tabBarInactive} style={styles.inactiveIcon} />
-                    <Text style={[styles.tabLabel, { color: theme.tabBarInactive }]}>{iconConfig.label || ''}</Text>
+                    <Ionicons name={iconName} size={ICON_SIZE} color={isDarkMode ? '#CCCCCC' : '#666666'} style={styles.inactiveIcon} />
+                    <Text style={[styles.tabLabel, { color: isDarkMode ? '#CCCCCC' : '#666666' }]}>{iconConfig.label || ''}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -118,26 +132,17 @@ const styles = StyleSheet.create({
     // Put shadow/elevation on the wrapper so the inner can clip corners cleanly
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 20,
-    elevation: 12,
+    elevation: 20,
   },
   inner: {
     flexDirection: 'row',
     height: '100%',
     paddingHorizontal: HORIZONTAL_PADDING,
     overflow: 'hidden', // critical to enforce 50% rounded corners with BlurView
-    backgroundColor: 'transparent',
     position: 'relative',
     alignItems: 'center',
-  },
-  blurBackground: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  blurOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ffffff',
-    opacity: 0.5,
   },
   indicator: {
     position: 'absolute',
@@ -157,6 +162,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: BAR_HEIGHT,
     zIndex: 2,
+    paddingHorizontal: 4,
   },
   activeIconWrapper: {
     width: INDICATOR_SIZE,
@@ -164,6 +170,7 @@ const styles = StyleSheet.create({
     borderRadius: INDICATOR_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   inactiveIconWrapper: {
     alignItems: 'center',
@@ -172,9 +179,13 @@ const styles = StyleSheet.create({
   },
   activeIcon: {
     opacity: 1,
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   inactiveIcon: {
     opacity: 0.7,
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   tabLabel: {
     marginTop: 4,

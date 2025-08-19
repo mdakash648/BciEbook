@@ -150,8 +150,8 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.border }]}> 
-        <Text style={[styles.headerTitle, { color: theme.text }]}>BCI E-LIBRARY</Text>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Books</Text>
       </View>
 
       {/* Filter Button */}
@@ -210,13 +210,13 @@ export default function HomeScreen({ navigation }) {
       {/* Book Count Section */}
       <View style={styles.bookCountSection}>
         <View style={styles.bookCountContainer}>
-          <Icon name="library-outline" size={20} color="#4A90E2" />
-          <Text style={styles.bookCountText}>
+          <Icon name="library-outline" size={20} color={theme.primary} />
+          <Text style={[styles.bookCountText, { color: theme.text }]}>
             {loading ? 'Loading...' : `${filtered.length} book${filtered.length !== 1 ? 's' : ''} ${query.trim() || Object.keys(searchCriteria).length > 0 ? 'found' : 'available'}`}
           </Text>
         </View>
         {(query.trim() || Object.keys(searchCriteria).length > 0) && (
-          <Text style={styles.totalBooksText}>
+          <Text style={[styles.totalBooksText, { color: theme.textSecondary }]}>
             Total: {totalBooks} book{totalBooks !== 1 ? 's' : ''} in library
           </Text>
         )}
@@ -242,7 +242,6 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   header: {
     paddingHorizontal: 20,
@@ -252,7 +251,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#212529',
   },
   toolbar: {
     paddingHorizontal: 20,
@@ -357,11 +355,9 @@ const styles = StyleSheet.create({
   bookCountText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
   },
   totalBooksText: {
     fontSize: 14,
-    color: '#6C757D',
     marginTop: 4,
     marginLeft: 28,
   },

@@ -598,23 +598,23 @@ export default function DashboardScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: theme.background }]}
         contentContainerStyle={{ paddingBottom: 20 + keyboardInset }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#4A90E2" />
+            <Icon name="arrow-back" size={24} color={theme.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Dashboard</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Dashboard</Text>
           <View style={styles.placeholder} />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Branding</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Branding</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <View style={styles.logoRow}>
               <View style={styles.logoPreview}>
                 {selected?.uri ? (
@@ -633,14 +633,14 @@ export default function DashboardScreen({ navigation }) {
                   />
                 ) : (
                   <View style={styles.placeholderImage}>
-                    <Icon name="image-outline" size={32} color="#6C757D" />
+                    <Icon name="image-outline" size={32} color={theme.textSecondary} />
                   </View>
                 )}
               </View>
 
               <View style={styles.logoContent}>
-                <Text style={styles.cardTitle}>App Logo</Text>
-                <Text style={styles.cardSubtitle}>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>App Logo</Text>
+                <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
                   PNG or JPG • Square recommended
                 </Text>
 
@@ -668,11 +668,11 @@ export default function DashboardScreen({ navigation }) {
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={styles.helperNote}>
+                <Text style={[styles.helperNote, { color: theme.textSecondary }]}>
                   Bucket: {CONFIG.APPWRITE_BUCKET_ID}
                 </Text>
                 {logoError && (
-                  <Text style={[styles.helperNote, { color: '#DC3545' }]}>
+                  <Text style={[styles.helperNote, { color: theme.error }]}>
                     {logoError}
                   </Text>
                 )}
@@ -682,10 +682,10 @@ export default function DashboardScreen({ navigation }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy Policy Management</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Privacy Policy Management</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <View style={styles.privacyHeader}>
-              <Text style={styles.cardTitle}>Privacy Policy</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Privacy Policy</Text>
               <TouchableOpacity
                 style={[styles.button, styles.editButton]}
                 onPress={() => setIsEditingPrivacy(!isEditingPrivacy)}
@@ -694,15 +694,15 @@ export default function DashboardScreen({ navigation }) {
                 <Icon
                   name={isEditingPrivacy ? 'close-outline' : 'create-outline'}
                   size={18}
-                  color="#4A90E2"
+                  color={theme.primary}
                 />
-                <Text style={[styles.buttonText, styles.editButtonText]}>
+                <Text style={[styles.buttonText, styles.editButtonText, { color: theme.primary }]}>
                   {isEditingPrivacy ? 'Cancel' : 'Edit'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.cardSubtitle}>
+            <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
               Manage your app's privacy policy content
             </Text>
 
@@ -713,12 +713,13 @@ export default function DashboardScreen({ navigation }) {
             {isEditingPrivacy ? (
               <View style={styles.textareaContainer}>
                 <TextInput
-                  style={styles.textarea}
+                  style={[styles.textarea, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                   value={privacyPolicy}
                   onChangeText={setPrivacyPolicy}
                   multiline
                   textAlignVertical="top"
                   placeholder="Enter your privacy policy content..."
+                  placeholderTextColor={theme.textMuted}
                 />
                 <TouchableOpacity
                   style={[styles.button, styles.saveButton]}
@@ -733,16 +734,16 @@ export default function DashboardScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.policyPreview}>
-                <Text style={styles.policyText} numberOfLines={6}>
+              <View style={[styles.policyPreview, { backgroundColor: theme.surface }]}>
+                <Text style={[styles.policyText, { color: theme.text }]} numberOfLines={6}>
                   {privacyPolicy}
                 </Text>
                 <TouchableOpacity
-                  style={styles.viewFullButton}
+                  style={[styles.viewFullButton, { borderTopColor: theme.border }]}
                   onPress={() => navigation.navigate('PrivacyPolicy')}
                 >
-                  <Text style={styles.viewFullText}>View Full Policy</Text>
-                  <Icon name="arrow-forward" size={16} color="#4A90E2" />
+                  <Text style={[styles.viewFullText, { color: theme.primary }]}>View Full Policy</Text>
+                  <Icon name="arrow-forward" size={16} color={theme.primary} />
                 </TouchableOpacity>
               </View>
             )}
@@ -751,9 +752,9 @@ export default function DashboardScreen({ navigation }) {
 
         {/* About Section */}
         <View style={styles.section}>
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
             <View style={styles.privacyHeader}>
-              <Text style={styles.cardTitle}>About</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>About</Text>
               <TouchableOpacity
                 style={[styles.button, styles.editButton]}
                 onPress={() => setIsEditingAbout(!isEditingAbout)}
@@ -762,27 +763,28 @@ export default function DashboardScreen({ navigation }) {
                 <Icon
                   name={isEditingAbout ? 'close-outline' : 'create-outline'}
                   size={18}
-                  color="#4A90E2"
+                  color={theme.primary}
                 />
-                <Text style={[styles.buttonText, styles.editButtonText]}>
+                <Text style={[styles.buttonText, styles.editButtonText, { color: theme.primary }]}>
                   {isEditingAbout ? 'Cancel' : 'Edit'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.cardSubtitle}>
+            <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
               Add a short About text for your app
             </Text>
 
             {isEditingAbout ? (
               <View style={styles.textareaContainer}>
                 <TextInput
-                  style={styles.textarea}
+                  style={[styles.textarea, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                   value={aboutText}
                   onChangeText={setAboutText}
                   multiline
                   textAlignVertical="top"
                   placeholder="Enter about text..."
+                  placeholderTextColor={theme.textMuted}
                 />
                 <TouchableOpacity
                   style={[styles.button, styles.saveButton]}
@@ -798,16 +800,16 @@ export default function DashboardScreen({ navigation }) {
               </View>
             ) : (
               !!aboutText && (
-                <View style={styles.policyPreview}>
-                  <Text style={styles.policyText} numberOfLines={2}>
+                <View style={[styles.policyPreview, { backgroundColor: theme.surface }]}>
+                  <Text style={[styles.policyText, { color: theme.text }]} numberOfLines={2}>
                     {aboutText}
                   </Text>
                   <TouchableOpacity
-                    style={styles.viewFullButton}
+                    style={[styles.viewFullButton, { borderTopColor: theme.border }]}
                     onPress={() => setAboutModalVisible(true)}
                   >
-                    <Text style={styles.viewFullText}>View Full About</Text>
-                    <Icon name="arrow-forward" size={16} color="#4A90E2" />
+                    <Text style={[styles.viewFullText, { color: theme.primary }]}>View Full About</Text>
+                    <Icon name="arrow-forward" size={16} color={theme.primary} />
                   </TouchableOpacity>
                 </View>
               )
@@ -818,12 +820,12 @@ export default function DashboardScreen({ navigation }) {
         {/* New Book Upload */}
         {/* Categories Management */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardSubtitle}>Create and view categories</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Categories</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+            <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>Create and view categories</Text>
             <View style={styles.textareaContainer}>
               <TextInput
-                style={[styles.textarea, { minHeight: 44 }]}
+                style={[styles.input, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Category name"
                 placeholderTextColor={theme.textMuted}
                 value={categoryName}
@@ -843,13 +845,13 @@ export default function DashboardScreen({ navigation }) {
             </View>
 
             <View style={{ marginTop: 12 }}>
-              <Text style={[styles.cardTitle, { marginBottom: 8 }]}>
+              <Text style={[styles.cardTitle, { marginBottom: 8, color: theme.text }]}>
                 Existing
               </Text>
               {categoryLoading ? (
-                <Text style={styles.helperNote}>Loading…</Text>
+                <Text style={[styles.helperNote, { color: theme.textSecondary }]}>Loading…</Text>
               ) : categories.length === 0 ? (
-                <Text style={styles.helperNote}>No categories yet.</Text>
+                <Text style={[styles.helperNote, { color: theme.textSecondary }]}>No categories yet.</Text>
               ) : (
                 categories.map(c => (
                   <View
@@ -857,14 +859,14 @@ export default function DashboardScreen({ navigation }) {
                     style={{
                       paddingVertical: 8,
                       borderBottomWidth: 1,
-                      borderBottomColor: '#E9ECEF',
+                      borderBottomColor: theme.border,
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
                     }}
                   >
                     <Text
-                      style={{ fontWeight: '600', color: '#212529', flex: 1 }}
+                      style={{ fontWeight: '600', color: theme.text, flex: 1 }}
                     >
                       {c.CategorieName}
                     </Text>
@@ -874,22 +876,22 @@ export default function DashboardScreen({ navigation }) {
                         style={{
                           padding: 4,
                           borderRadius: 6,
-                          backgroundColor: '#E3F2FD',
+                          backgroundColor: theme.primary + '15',
                         }}
                         activeOpacity={0.7}
                       >
-                        <Icon name="create-outline" size={16} color="#1976D2" />
+                        <Icon name="create-outline" size={16} color={theme.primary} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => openDeleteCategory(c)}
                         style={{
-                          padding: 4,
+                          padding: 6,
                           borderRadius: 6,
-                          backgroundColor: '#FFEBEE',
+                          backgroundColor: theme.isDarkMode ? '#8B0000' : '#FF4444',
                         }}
                         activeOpacity={0.7}
                       >
-                        <Icon name="trash-outline" size={16} color="#D32F2F" />
+                        <Icon name="trash-outline" size={16} color="#FFFFFF" />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -901,35 +903,35 @@ export default function DashboardScreen({ navigation }) {
 
         {/* New Book Upload */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upload New Book (PDF)</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardSubtitle}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Upload New Book (PDF)</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+            <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
               Provide book details and files
             </Text>
             <View style={styles.textareaContainer}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Book title"
                 placeholderTextColor={theme.textMuted}
                 value={bookTitle}
                 onChangeText={setBookTitle}
               />
               <TextInput
-                style={[styles.input, { marginTop: 8 }]}
+                style={[styles.input, { marginTop: 8, color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Author"
                 placeholderTextColor={theme.textMuted}
                 value={bookAuthor}
                 onChangeText={setBookAuthor}
               />
               <TextInput
-                style={[styles.input, { marginTop: 8 }]}
+                style={[styles.input, { marginTop: 8, color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Edition"
                 placeholderTextColor={theme.textMuted}
                 value={bookEdition}
                 onChangeText={setBookEdition}
               />
               <TextInput
-                style={[styles.input, { marginTop: 8 }]}
+                style={[styles.input, { marginTop: 8, color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Pages"
                 placeholderTextColor={theme.textMuted}
                 value={bookPages}
@@ -937,39 +939,39 @@ export default function DashboardScreen({ navigation }) {
                 keyboardType="number-pad"
               />
               <TextInput
-                style={[styles.input, { marginTop: 8 }]}
+                style={[styles.input, { marginTop: 8, color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Language"
                 placeholderTextColor={theme.textMuted}
                 value={bookLanguage}
                 onChangeText={setBookLanguage}
               />
               <TextInput
-                style={[styles.input, { marginTop: 8 }]}
+                style={[styles.input, { marginTop: 8, color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Publisher"
                 placeholderTextColor={theme.textMuted}
                 value={bookPublisher}
                 onChangeText={setBookPublisher}
               />
               <TextInput
-                style={[styles.input, { marginTop: 8 }]}
+                style={[styles.input, { marginTop: 8, color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Country"
                 placeholderTextColor={theme.textMuted}
                 value={bookCountry}
                 onChangeText={setBookCountry}
               />
               <View style={{ marginTop: 8 }}>
-                <Text style={[styles.cardSubtitle, { marginBottom: 6 }]}>
+                <Text style={[styles.cardSubtitle, { marginBottom: 6, color: theme.textSecondary }]}>
                   Select categories
                 </Text>
                 {categoryLoading ? (
-                  <Text style={styles.helperNote}>Loading categories…</Text>
+                  <Text style={[styles.helperNote, { color: theme.textSecondary }]}>Loading categories…</Text>
                 ) : categories.length === 0 ? (
-                  <Text style={styles.helperNote}>
+                  <Text style={[styles.helperNote, { color: theme.textSecondary }]}>
                     No categories yet. Create some above.
                   </Text>
                 ) : (
                   <View
-                    style={{ borderTopWidth: 1, borderTopColor: '#E9ECEF' }}
+                    style={{ borderTopWidth: 1, borderTopColor: theme.border }}
                   >
                     {categories.map(c => {
                       const checked = selectedCategoryIds.includes(c.$id);
@@ -983,7 +985,7 @@ export default function DashboardScreen({ navigation }) {
                             alignItems: 'center',
                             paddingVertical: 10,
                             borderBottomWidth: 1,
-                            borderBottomColor: '#E9ECEF',
+                            borderBottomColor: theme.border,
                             gap: 10,
                           }}
                         >
@@ -992,11 +994,11 @@ export default function DashboardScreen({ navigation }) {
                               checked ? 'checkbox-outline' : 'square-outline'
                             }
                             size={20}
-                            color={checked ? '#4A90E2' : '#6C757D'}
+                            color={checked ? theme.primary : theme.textSecondary}
                           />
                           <View style={{ flex: 1 }}>
                             <Text
-                              style={{ color: '#212529', fontWeight: '600' }}
+                              style={{ color: theme.text, fontWeight: '600' }}
                             >
                               {c.CategorieName}
                             </Text>
@@ -1007,7 +1009,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 {selectedCategoryIds.length > 0 && (
-                  <Text style={[styles.helperNote, { marginTop: 8 }]}>
+                  <Text style={[styles.helperNote, { marginTop: 8, color: theme.textSecondary }]}>
                     Selected: {bookCategory}
                   </Text>
                 )}
@@ -1035,10 +1037,10 @@ export default function DashboardScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
               {coverAsset && (
-                <Text style={styles.helperNote}>Cover: {coverAsset.name}</Text>
+                <Text style={[styles.helperNote, { color: theme.textSecondary }]}>Cover: {coverAsset.name}</Text>
               )}
               {pdfAsset && (
-                <Text style={styles.helperNote}>PDF: {pdfAsset.name}</Text>
+                <Text style={[styles.helperNote, { color: theme.textSecondary }]}>PDF: {pdfAsset.name}</Text>
               )}
               <TouchableOpacity
                 style={[styles.button, styles.saveButton]}
@@ -1062,22 +1064,22 @@ export default function DashboardScreen({ navigation }) {
         visible={aboutModalVisible}
         onRequestClose={() => setAboutModalVisible(false)}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>About</Text>
+        <View style={[styles.modalBackdrop, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.modal }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>About</Text>
               <TouchableOpacity
                 onPress={() => setAboutModalVisible(false)}
                 style={styles.modalCloseBtn}
               >
-                <Icon name="close" size={20} color="#212529" />
+                <Icon name="close" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
             <ScrollView
               style={{ maxHeight: 400 }}
               showsVerticalScrollIndicator={true}
             >
-              <Text style={styles.modalBodyText}>{aboutText}</Text>
+              <Text style={[styles.modalBodyText, { color: theme.text }]}>{aboutText}</Text>
             </ScrollView>
           </View>
         </View>
@@ -1090,20 +1092,20 @@ export default function DashboardScreen({ navigation }) {
         visible={editModalVisible}
         onRequestClose={closeEditCategory}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Category</Text>
+        <View style={[styles.modalBackdrop, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.modal }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Edit Category</Text>
               <TouchableOpacity
                 onPress={closeEditCategory}
                 style={styles.modalCloseBtn}
               >
-                <Icon name="close" size={20} color="#212529" />
+                <Icon name="close" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
-            <View style={styles.textareaContainer}>
+            <View style={[styles.textareaContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <TextInput
-                style={[styles.input, { marginTop: 0 }]}
+                style={[styles.input, { marginTop: 0, color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
                 placeholder="Category name"
                 placeholderTextColor={theme.textMuted}
                 value={editCategoryName}
@@ -1113,11 +1115,11 @@ export default function DashboardScreen({ navigation }) {
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
               <TouchableOpacity
-                style={[styles.button, styles.editButton, { flex: 1 }]}
+                style={[styles.button, styles.editButton, { flex: 1, backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={closeEditCategory}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.buttonText, styles.editButtonText]}>
+                <Text style={[styles.buttonText, styles.editButtonText, { color: theme.textSecondary }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
@@ -1148,33 +1150,33 @@ export default function DashboardScreen({ navigation }) {
         visible={deleteModalVisible}
         onRequestClose={closeDeleteCategory}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Delete Category</Text>
+        <View style={[styles.modalBackdrop, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.modal }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Delete Category</Text>
               <TouchableOpacity
                 onPress={closeDeleteCategory}
                 style={styles.modalCloseBtn}
               >
-                <Icon name="close" size={20} color="#212529" />
+                <Icon name="close" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalBodyText}>
+            <Text style={[styles.modalBodyText, { color: theme.text }]}>
               Are you sure you want to delete "{deletingCategory?.CategorieName}
               "? This action cannot be undone.
             </Text>
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
               <TouchableOpacity
-                style={[styles.button, styles.editButton, { flex: 1 }]}
+                style={[styles.button, styles.editButton, { flex: 1, backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={closeDeleteCategory}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.buttonText, styles.editButtonText]}>
+                <Text style={[styles.buttonText, styles.editButtonText, { color: theme.textSecondary }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.button, { backgroundColor: '#D32F2F', flex: 1 }]}
+                style={[styles.button, { backgroundColor: theme.error, flex: 1 }]}
                 onPress={deleteCategoryHandler}
                 disabled={categoryUpdating}
                 activeOpacity={0.8}
@@ -1193,23 +1195,24 @@ export default function DashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  scrollView: { flex: 1 },
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
   },
   backButton: { padding: 4 },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#212529',
     flex: 1,
     textAlign: 'center',
   },
@@ -1218,16 +1221,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#495057',
     marginBottom: 12,
     marginHorizontal: 20,
   },
   card: {
     marginHorizontal: 20,
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 3.84,
@@ -1238,7 +1238,6 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 10,
-    backgroundColor: '#F1F3F5',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -1252,10 +1251,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoContent: { flex: 1 },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: '#212529' },
+  cardTitle: { fontSize: 16, fontWeight: '600' },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6C757D',
     marginTop: 4,
     marginBottom: 12,
   },
@@ -1277,7 +1275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonText: { color: '#FFFFFF' },
-  helperNote: { marginTop: 8, fontSize: 12, color: '#6C757D' },
+  helperNote: { marginTop: 8, fontSize: 12 },
   debugButton: { backgroundColor: '#6C757D', marginTop: 8 },
   debugButtonText: { color: '#FFFFFF' },
   // New styles for Privacy Policy Management
@@ -1294,41 +1292,33 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   editButtonText: {
-    color: '#4A90E2',
     fontSize: 14,
     fontWeight: '600',
   },
   textareaContainer: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#CED4DA',
     borderRadius: 8,
     padding: 10,
   },
   textarea: {
     minHeight: 100,
     fontSize: 14,
-    color: '#343A40',
     padding: 0,
   },
   input: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#CED4DA',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#212529',
   },
   policyPreview: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#F1F3F5',
     borderRadius: 8,
   },
   policyText: {
     fontSize: 14,
-    color: '#495057',
     lineHeight: 20,
   },
   viewFullButton: {
@@ -1337,11 +1327,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#E9ECEF',
   },
   viewFullText: {
     fontSize: 14,
-    color: '#4A90E2',
     marginRight: 5,
   },
   // New styles for Database Status
@@ -1350,10 +1338,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#E9F5F5',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#28A745',
   },
   databaseStatusContent: {
     flex: 1,
@@ -1362,23 +1348,19 @@ const styles = StyleSheet.create({
   databaseStatusText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#28A745',
   },
   databaseStatusSubtext: {
     fontSize: 12,
-    color: '#6C757D',
     marginTop: 2,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
   },
@@ -1387,8 +1369,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+    borderBottomWidth: 1,
+    paddingBottom: 8,
   },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: '#212529' },
+  modalTitle: { fontSize: 16, fontWeight: '700' },
   modalCloseBtn: { padding: 4 },
-  modalBodyText: { fontSize: 14, color: '#212529', lineHeight: 20 },
+  modalBodyText: { fontSize: 14, lineHeight: 20 },
 });

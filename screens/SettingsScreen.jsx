@@ -211,7 +211,7 @@ export default function SettingsScreen({ navigation }) {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Settings</Text>
         </View>
         {/* User Profile Section */}
@@ -339,13 +339,13 @@ export default function SettingsScreen({ navigation }) {
             <View style={styles.modalBody}>
               {/* Current Password */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Current Password</Text>
-                <View style={styles.inputWrapper}>
-                  <Icon name="lock-closed-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Current Password</Text>
+                <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                  <Icon name="lock-closed-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="Enter your current password"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={theme.textMuted}
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
                     secureTextEntry={!showCurrentPassword}
@@ -359,21 +359,21 @@ export default function SettingsScreen({ navigation }) {
                     <Icon 
                       name={showCurrentPassword ? "eye-off" : "eye"} 
                       size={20} 
-                      color="#6C757D" 
+                      color={theme.textSecondary} 
                     />
                   </TouchableOpacity>
                 </View>
               </View>
               {/* New Password */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>New Password</Text>
-                <Text style={styles.inputDescription}>Must be at least 8 characters long</Text>
-                <View style={styles.inputWrapper}>
-                  <Icon name="lock-closed-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+                <Text style={[styles.inputLabel, { color: theme.text }]}>New Password</Text>
+                <Text style={[styles.inputDescription, { color: theme.textSecondary }]}>Must be at least 8 characters long</Text>
+                <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                  <Icon name="lock-closed-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="Enter new password"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={theme.textMuted}
                     value={newPassword}
                     onChangeText={setNewPassword}
                     secureTextEntry={!showNewPassword}
@@ -387,20 +387,20 @@ export default function SettingsScreen({ navigation }) {
                     <Icon 
                       name={showNewPassword ? "eye-off" : "eye"} 
                       size={20} 
-                      color="#6C757D" 
+                      color={theme.textSecondary} 
                     />
                   </TouchableOpacity>
                 </View>
               </View>
               {/* Confirm New Password */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Confirm New Password</Text>
-                <View style={styles.inputWrapper}>
-                  <Icon name="lock-closed-outline" size={20} color="#6C757D" style={styles.inputIcon} />
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Confirm New Password</Text>
+                <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                  <Icon name="lock-closed-outline" size={20} color={theme.textSecondary} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="Confirm new password"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={theme.textMuted}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showConfirmPassword}
@@ -414,7 +414,7 @@ export default function SettingsScreen({ navigation }) {
                     <Icon 
                       name={showConfirmPassword ? "eye-off" : "eye"} 
                       size={20} 
-                      color="#6C757D" 
+                      color={theme.textSecondary} 
                     />
                   </TouchableOpacity>
                 </View>
@@ -449,27 +449,27 @@ export default function SettingsScreen({ navigation }) {
         transparent={true}
         onRequestClose={() => setShowAboutModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>About</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.modal }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>About</Text>
               <TouchableOpacity onPress={() => setShowAboutModal(false)} style={styles.modalCloseButton}>
-                <Icon name="close" size={24} color="#6C757D" />
+                <Icon name="close" size={24} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalBody}>
               <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
-                <Text style={styles.aboutModalText}>
+                <Text style={[styles.aboutModalText, { color: theme.text }]}>
                   {aboutText || 'No about text set.'}
                 </Text>
               </ScrollView>
             </View>
             <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={() => setShowAboutModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Close</Text>
+                <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -490,7 +490,6 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E9ECEF',
   },

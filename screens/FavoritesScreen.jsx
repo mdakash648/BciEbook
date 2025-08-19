@@ -127,7 +127,7 @@ export default function FavoritesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
         <Text style={[styles.headerTitle, { color: theme.text }]}> Favorites</Text>
         <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
           {favorites.length} {favorites.length === 1 ? 'book' : 'books'} in your collection
@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E9ECEF',
   },

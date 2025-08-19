@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../context/ThemeContext';
 import { loadPublicData } from '../services/demoPolicyService';
 
 export default function PrivacyPolicyScreen({ navigation }) {
+  const { theme } = useTheme();
   const [privacyPolicy, setPrivacyPolicy] = useState('');
   const [loading, setLoading] = useState(true);
   const [metadata, setMetadata] = useState(null);
@@ -34,38 +36,38 @@ export default function PrivacyPolicyScreen({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#4A90E2" />
+            <Icon name="arrow-back" size={24} color={theme.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Privacy Policy</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Privacy Policy</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4A90E2" />
-          <Text style={styles.loadingText}>Loading Privacy Policy...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading Privacy Policy...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#4A90E2" />
+          <Icon name="arrow-back" size={24} color={theme.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Privacy Policy</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Privacy Policy</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.scrollView, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* Database metadata removed */}
 
-          <Text style={styles.policyContent}>{privacyPolicy}</Text>
+          <Text style={[styles.policyContent, { color: theme.text }]}>{privacyPolicy}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -75,7 +77,6 @@ export default function PrivacyPolicyScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   header: {
     flexDirection: 'row',
@@ -83,9 +84,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
   },
   backButton: {
     padding: 4,
@@ -93,7 +92,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#212529',
     flex: 1,
     textAlign: 'center',
   },
@@ -165,7 +163,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#6C757D',
   },
   metadataContainer: {
     marginBottom: 20,
@@ -188,6 +185,5 @@ const styles = StyleSheet.create({
   policyContent: {
     fontSize: 15,
     lineHeight: 24,
-    color: '#343A40',
   },
 });
